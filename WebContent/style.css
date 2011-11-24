@@ -1,0 +1,9 @@
+body{
+	margin: 0px;
+}
+
+#info0{
+	float: right;
+	position: absolute;
+	right: 10px;
+}
