@@ -20,16 +20,30 @@ Math.round = function(number){
 }
 
 /**
- * 文字列とRulerに指定したスタイルからその文字列を表示するのに最低限必要な幅を算出する
+ * propsの中からvalueの値を持つプロパティーを探し出し、そのプロパティー名を返す
+ * @param props
+ * @param value
+ * @returns {String} | undefined
  */
-String.prototype.getExtent = function(){
+function getPropertyName(props, value){
+	for(var property in props){
+		if(props[property] == value){return property.toLowerCase();}
+	}
+	
+	return undefined;
+}
+
+/**
+ * 文字列とRulerに指定したスタイルからその文字列を表示するのに最低限必要な幅と高さを算出する
+ */
+String.prototype.getExpansion = function(){
 	var e = document.getElementById("ruler");
 	var c;
 	while(c = e.lastChild){e.removeChild(c);}
 	var text = e.appendChild(document.createTextNode(this));
-	var width = e.offsetWidth;
+	var expansion = {"width" : e.offsetWidth, "height" : e.offsetHeight};
 	e.removeChild(text);
-	return width;
+	return expansion;
 }
 
 function setRulerStyle(style){
@@ -73,7 +87,7 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 		gameover_label.x = x;
 		gameover_label.y = y;
 		setRulerStyle(" font: " + gameover_label.font);
-		gameover_label.width = gameover_label.text.getExtent();
+		gameover_label.width = gameover_label.text.getExpansion().width;
 		gameover_label.backgroundColor = "#ffffff";
 		gameover_label.color = "#ff1512";
 		this.addChild(gameover_label);
@@ -83,6 +97,7 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 				game.popScene();
 				game.popScene();
 				game.pushScene(stage);
+				game.input['a'] = false;
 			}
 		});
 	}
@@ -97,13 +112,14 @@ var PauseScene = enchant.Class.create(enchant.Scene, {
 		pause_label.x = x;
 		pause_label.y = y;
 		setRulerStyle(" font: " + pause_label.font);
-		pause_label.width = pause_label.text.getExtent();
+		pause_label.width = pause_label.text.getExpansion().width;
 		pause_label.backgroundColor = "#ffffff";
 		pause_label.color = "#ff1512";
 		this.addChild(pause_label);
 		this.addEventListener('enterframe', function(){
 			if(game.input.up){		//upボタンを押されたらポーズシーンを抜ける
 				game.popScene();
+				game.input['up'] = false;
 			}
 		});
 	}
@@ -145,7 +161,7 @@ var NextPieceLabel = enchant.Class.create({
 		this.next_label.x = 25;
 		this.next_label.y = this.y;
 		setRulerStyle(" font: " + this.next_label.font);
-		this.next_label.width = this.next_label.text.getExtent();
+		this.next_label.width = this.next_label.text.getExpansion().width;
 		this.next_pieces = new Array(8);
 	},
 	
@@ -179,6 +195,7 @@ var Piece = enchant.Class.create(enchant.Sprite, {
 		this.position_in_shape = {"x" : 0, "y" : 0};	//現在のシェイプ内での相対的な位置ブロック単位で表したもの:左上が(0,0)右下が(4,2)
 		this.neighbors = [null, null, null, null];	//自分の周りにいるピースへの参照:[Left, Right, Up, Down]の順番
 		this.neighbors_buffer = null;				//消せるピースを探すときに使用するneighborsの一時保存領域
+		this.connecting_to = 0x00;		//どの方向のピースと連結しているかを表す。4ビットのフラグとして管理し、その順番はneighborsと同じく右端のビットがDownとなる
 		this.panel = panel;
 	},
 	
@@ -201,7 +218,45 @@ var Piece = enchant.Class.create(enchant.Sprite, {
 		return (this.type == other_piece.type);
 	},
 	
-	searchForSameTypeOfPiece : function(group){
+	makeConnected : function(index){
+		switch(index){
+		case 0:
+			this.connecting_to |= 0x08;		//1000
+			break;
+			
+		case 1:
+			this.connecting_to |= 0x04;		//0100
+			break;
+			
+		case 2:
+			if((this.connecting_to & 0x02) != 0x02){
+				this.connecting_to |= 0x02;		//0010
+				this.panel.effect_manager.addEffect(new TimeIndependentVibrationEffect(this, Math.floor(this.real_coords.x) - 3
+						, Math.floor(this.real_coords.x) + 3, Math.floor(this.real_coords.y) - 6, Math.floor(this.real_coords.y)
+						, 2, Number.POSITIVE_INFINITY));
+			}
+			break;
+			
+		case 3:
+			if((this.connecting_to & 0x01) != 0x01){
+				this.connecting_to |= 0x01;		//0001
+				this.panel.effect_manager.addEffect(new TimeIndependentVibrationEffect(this, Math.floor(this.real_coords.x) - 3
+						, Math.floor(this.real_coords.x) + 3, Math.floor(this.real_coords.y), Math.floor(this.real_coords.y) + 6
+						, 2, Number.POSITIVE_INFINITY));
+			}
+			break;
+		}
+		
+		this.frame = this.connecting_to >> 2;
+	},
+	
+	makeUnconnected : function(){
+		this.connecting_to = 0x00;
+		this.frame = this.connecting_to;
+		this.setCoords();
+	},
+	
+	searchForSameTypeOfPiece : function(group, starting_pieces){
 		group.push(this);
 		this.neighbors_buffer.forEach(function(piece, cur_index, array){
 			if(piece != null && this.isOfSameType(piece)){
@@ -210,7 +265,13 @@ var Piece = enchant.Class.create(enchant.Sprite, {
 				var index = piece.neighbors_buffer.indexOf(this);	//相手側からこのピースに到達されて二重探索にならないように相手側の参照を消しておく
 				delete piece.neighbors_buffer[index];
 				
-				piece.searchForSameTypeOfPiece(group);
+				var index2 = starting_pieces.indexOf(piece);		//見つかったものは起点となるピースから削除する
+				if(index2 != -1){delete starting_pieces[index2];}
+				
+				this.makeConnected(cur_index);
+				piece.makeConnected((cur_index % 2 == 0) ? cur_index + 1 : cur_index - 1);
+				
+				piece.searchForSameTypeOfPiece(group, starting_pieces);
 			}
 		}, this);
 	},
@@ -278,6 +339,164 @@ var Piece = enchant.Class.create(enchant.Sprite, {
 	}
 });
 
+var XmlManager = enchant.Class.create({
+	initialize : function(url){
+		var http_obj = new XMLHttpRequest();
+		var effects_definitions = new Array();
+		var max_nums = new Array();
+		http_obj.onload = function(){
+			var squeezeValues = function(elem){
+				var obj = {};
+				for(var attrs = elem.attributes, i = 0; i < attrs.length; ++i){
+					obj[attrs[i].name] = (attrs[i].value.search(/^[0-9]+/) != -1) ? parseFloat(attrs[i].value) : attrs[i].value;	//数値だけのものはNumber型にする
+				}
+				
+				return obj;
+			};
+			var xml = http_obj.responseXML;
+			var doc = xml.documentElement;
+			var num;
+			for(var child = doc.firstElementChild; child != null; child = child.nextElementSibling){
+				if(child.childElementCount != 0){
+					var obj = {};
+					num = parseInt(child.getAttribute("num"));
+					for(var w_child = child.firstElementChild; w_child != null; w_child = w_child.nextElementSibling){
+						obj = squeezeValues(w_child);
+						obj['num'] = num;
+						obj['text'] = w_child.textContent;
+						obj['name'] = w_child.tagName.toLowerCase();
+						effects_definitions.push(obj);
+					}
+					if(child.nextElementSibling == null || child.nextElementSibling.getAttribute("num") == 0){
+						max_nums.push({"key" : (obj.target != undefined) ? obj.name + " with " + obj.target : obj.name, "num" : num});
+					}
+				}else{
+					num = parseInt(child.getAttribute("num"));
+					var obj = squeezeValues(child);
+					obj['text'] = child.textContent;
+					obj['name'] = child.tagName.toLowerCase();
+					effects_definitions.push(obj);
+					max_nums.push({"key" : (obj.target != undefined) ? obj.name + " with " + obj.target : obj.name, "num" : num});
+				}
+			}
+		}
+		
+		http_obj.open("get", url, false);
+		http_obj.send(null);
+		
+		this.getDefinitions = function(tag_name, target){
+			var name = "effect" + tag_name;
+			if(target != undefined){
+				var results = effects_definitions.filter(function(definition){
+					return(definition.name == name && definition['with'] == target);
+				});
+			}else{
+				var results = effects_definitions.filter(function(definition){
+					return(definition.name == name);
+				});
+			}
+			
+			return results;
+		};
+		
+		this.getMaxNum = function(effect_name, target){
+			var searching_str = (target != undefined) ? "effect" + effect_name + " with " + target : "effect" + effect_name;
+			var result = -1;
+			max_nums.every(function(obj){
+				if(obj.key == searching_str){
+					result = obj.num + 1;
+					return false;
+				}
+				
+				return true;
+			});
+			
+			return result;
+		};
+	},
+	
+	interpretX : function(val, width, average){
+		if(val == "average"){
+			return Math.floor(average);
+		}else if(val == "average with margin"){
+			return (average + width > game.width) ? game.width - width : average;
+		}
+		
+		return val;
+	},
+	
+	interpretY : function(val, height, average){
+		if(val == "average"){
+			return Math.floor(average);
+		}else if(val == "average with margin"){
+			return (average + height > game.height) ? game.height - height : average;
+		}
+		
+		return val;
+	},
+	
+	interpretColor : function(color){
+		if(color[0] == '#' || color.search(/^rgb/) != -1){
+			return color;
+		}else{
+			return ColorTable[PieceTypes[color]];
+		}
+	},
+	
+	interpretSoundBufferNum : function(buffer_num){
+		if(typeof(buffer_num) == "Number"){
+			return buffer_num;
+		}else{
+			return sound_manager.sound_types[buffer_num];
+		}
+	},
+	
+	interpret : function(definition, pieces, average_coords){
+		switch(definition.type){
+		case "PieceFrameEffect":
+			return new PieceFrameEffect(pieces, definition.frame, game.frame + definition.start_time);
+			break;
+			
+		case "FadeOutPieceEffect":
+			return new FadeOutPieceEffect(pieces, game.frame + definition.end_time, definition.rate
+					, (definition.start_time == undefined) ? undefined : game.frame + definition.start_time);
+			break;
+			
+		case "SoundEffect":
+			return new SoundEffect(this.interpretSoundBufferNum(definition.buffer_num), game.frame + definition.start_time);
+			break;
+		}
+		
+		var position = {"x" : 0, "y" : 0};
+		setRulerStyle(" font: " + definition.font);
+		var size = definition.text.getExpansion();
+		position.x = this.interpretX(definition.x, size.width, average_coords.x);
+		position.y = this.interpretY(definition.y, size.height, average_coords.y);
+		var color = this.interpretColor(definition.color);
+		
+		switch(definition.type){
+		case "LabelEffect":
+			return new LabelEffect(definition.font, position.x, position.y, size.width, definition.text, game.frame + definition.end_time
+					, definition.background_color, color, (definition.start_time == undefined) ? undefined : game.frame + definition.start_time);
+			break;
+			
+		case "FadeInLabelEffect":
+			return new FadeInLabelEffect(definition.font, position.x, position.y, size.width, definition.text
+					, game.frame + definition.end_time, definition.background_color, color
+					, (definition.start_time == undefined) ? undefined : game.frame + definition.start_time, definition.rate);
+			break;
+			
+		case "FadeOutLabelEffect":
+			return new FadeOutLabelEffect(definition.font, position.x, position.y, size.width, definition.text
+					, game.frame + definition.end_time, definition.background_color, color
+					, (definition.start_time == undefined) ? undefined : game.frame + definition.start_time, definition.rate);
+			break;
+		}
+		
+		throw new TypeError();
+	}
+});
+
 var SoundManager = enchant.Class.create({
 	initialize : function(){
 		this.sounds = new Array();
@@ -309,6 +528,9 @@ var SoundManager = enchant.Class.create({
 	}
 });
 
+/**
+ * エフェクトマネージャー
+ */
 var EffectManager = enchant.Class.create({
 	initialize : function(){
 		this.effects = new Array();
@@ -318,9 +540,17 @@ var EffectManager = enchant.Class.create({
 		this.effects.push(effect);
 	},
 	
+	removeEffect : function(piece){
+		this.effects.forEach(function(effect, index, array){
+			if(effect.hasOwnProperty('piece') && effect.piece == piece){
+				delete array[index];
+			}
+		});
+	},
+	
 	update : function(){
 		this.effects = this.effects.filter(function(effect){
-			return (game.frame <= effect.end_time + 30);
+			return (game.frame < effect.end_time + 10 || effect.end_time == Number.POSITIVE_INFINITY);
 		});
 		
 		this.effects.forEach(function(effect){
@@ -329,38 +559,51 @@ var EffectManager = enchant.Class.create({
 	}
 });
 
+/**
+ * エフェクトの基底クラス
+ */
 var Effect = enchant.Class.create({
-	initialize : function(time_to_end_effecting){
-		this.end_time = time_to_end_effecting;
+	initialize : function(time_to_end_affecting, time_to_start_affecting){
+		this.start_time = (time_to_start_affecting == undefined) ? 0 : time_to_start_affecting;
+		this.end_time = time_to_end_affecting;
 	}
 });
 
+/**
+ * 画面上にラベルを表示するエフェクト
+ */
 var LabelEffect = enchant.Class.create(Effect, {
-	initialize : function(font, x, y, text, time_to_end_effecting, background_color, color){
-		Effect.call(this, time_to_end_effecting);
+	initialize : function(font, x, y, width, text, time_to_end_affecting, background_color, color, time_to_start_affecting){
+		Effect.call(this, time_to_end_affecting, time_to_start_affecting);
 		
 		this.label = new enchant.Label(text);
 		this.label.font = font;
 		this.label.x = x;
 		this.label.y = y;
 		this.label.backgroundColor = background_color;
-		setRulerStyle(" font: " + this.label.font);
-		this.label.width = this.label.text.getExtent();
-		if(arguments.length > 6){this.label.color = color;}
-		
-		game.currentScene.addChild(this.label);
+		this.label.width = width;
+		this.label_added = false;
+		if(color != undefined){this.label.color = color;}
 	},
 	
 	update : function(){
-		if(game.frame >= this.end_time){
+		if(!this.label_added && game.frame >= this.start_time){
+			game.currentScene.addChild(this.label);
+			this.label_added = true;
+		}
+		
+		if(this.label_added && game.frame >= this.end_time){
 			game.currentScene.removeChild(this.label);
 		}
 	}
 });
 
+/**
+ * だんだん出現するラベルのエフェクト
+ */
 var FadeInLabelEffect = enchant.Class.create(LabelEffect, {
-	initialize : function(font, x, y, text, time_to_end_effecting, background_color, color, increasing_rate){
-		LabelEffect.call(this, font, x, y, text, time_to_end_effecting, background_color, color);
+	initialize : function(font, x, y, width, text, time_to_end_affecting, background_color, color, time_to_start_affecting, increasing_rate){
+		LabelEffect.call(this, font, x, y, width, text, time_to_end_affecting, background_color, color, time_to_start_affecting);
 		
 		this.label.opacity = 0;
 		this.opacity_increasing_rate = increasing_rate;
@@ -373,19 +616,140 @@ var FadeInLabelEffect = enchant.Class.create(LabelEffect, {
 	}
 });
 
-var PieceEffect = enchant.Class.create(Effect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords, score_label_color){
-		Effect.call(this, time_to_end_effecting);
+/**
+ * だんだん消えていくラベルのエフェクト
+ */
+var FadeOutLabelEffect = enchant.Class.create(LabelEffect, {
+	initialize : function(font, x, y, width, text, time_to_end_affecting, background_color, color, time_to_start_affecting, decreasing_rate){
+		LabelEffect.call(this, font, x, y, width, text, time_to_end_affecting, background_color, color, time_to_start_affecting);
+		
+		this.label.opacity = 1;
+		this.opacity_decreasing_rate = decreasing_rate;
+	},
+	
+	update : function(){
+		this.__proto__.__proto__.update.call(this);
+		
+		this.label.opacity -= this.opacity_decreasing_rate;
+	}
+});
+
+/**
+ * 特定の座標を最小値から最大値の間で行ったり来たりするように更新するクラス。
+ */
+var TimeIndependentVibrationEffect = enchant.Class.create(Effect, {
+	initialize : function(piece, min_x, max_x, min_y, max_y, max_rate, time_to_end_affecting){
+		Effect.call(this, time_to_end_affecting);
+		
+		this.piece = piece;								//座標を更新する対象となるピース
+		this.min_val = {"x" : min_x, "y" : min_y};							//最小値
+		this.max_val = {"x" : max_x, "y" : max_y};							//最大値
+		this.average_val = {"x" : (min_x + max_x) / 2, "y" : (min_y + max_y) / 2};
+		this.max_rate = max_rate;						//1回の更新で更新できる最大値
+	},
+	
+	update : function(){
+		var diff_x = Math.round(Math.random() * this.max_rate), diff_y = Math.round(Math.random() * this.max_rate);
+		this.piece.x += (this.piece.x >= this.average_val.x) ? -diff_x : diff_x;
+		this.piece.y += (this.piece.y >= this.average_val.y) ? -diff_y : diff_y;
+	}
+});
+
+/**
+ * Piece.frameをいじるエフェクト
+ */
+var PieceFrameEffect = enchant.Class.create(Effect, {
+	initialize : function(pieces, frame, time_to_start_affecting){
+		Effect.call(this, time_to_start_affecting + 1, time_to_start_affecting);
 		
 		this.targets = pieces;
+		this.frame = frame;
+	},
+	
+	update : function(){
+		if(this.start_time <= game.frame && game.frame <= this.end_time){
+			this.targets.forEach(function(piece){
+				piece.frame = this.frame;
+			}, this);
+		}
+	}
+});
+
+/**
+ * だんだんピースを消していくエフェクト
+ */
+var FadeOutPieceEffect = enchant.Class.create(Effect, {
+	initialize : function(pieces, time_to_end_affecting, decreasing_rate, time_to_start_affecting){
+		Effect.call(this, time_to_end_affecting, time_to_start_affecting);
+		
+		this.targets = pieces;
+		this.rate = decreasing_rate;
+	},
+	
+	update : function(){
+		if(this.start_time <= game.frame && game.frame <= this.end_time){
+			this.targets.forEach(function(piece){
+				piece.opacity -= this.rate;
+			}, this);
+		}
+	}
+});
+
+/**
+ * 音を鳴らすエフェクト
+ */
+var SoundEffect = enchant.Class.create(Effect, {
+	initialize : function(buffer_num, time_to_start_affecting){
+		Effect.call(this, time_to_start_affecting + 1, time_to_start_affecting);
+		
+		this.buffer_num = buffer_num;
+	},
+	
+	update : function(){
+		if(this.start_time <= game.frame && game.frame <= this.end_time){
+			sound_manager.play(this.buffer_num);
+		}
+	}
+});
+
+var PiecesEffect = enchant.Class.create(Effect, {
+	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting/*, average_coords, score_label_color*/){
+		Effect.call(this, time_to_end_affecting);
+		
 		this.sub_effects = new Array();
 		
-		this.sub_effects.push(new LabelEffect("large 'うずらフォント', 'MS ゴシック'", Math.floor(average_coords.x - 50)
-				, Math.floor(average_coords.y), "+" + score, time_to_end_effecting, "#ffffff", score_label_color));
+		var average_coords = {"x" : 0, "y" : 0};
+		pieces.forEach(function(piece){
+			average_coords.x += piece.real_coords.x;
+			average_coords.y += piece.real_coords.y;
+		})
+		average_coords.x /= pieces.length;
+		average_coords.y /= pieces.length;
 		
-		this.sub_effects.push(new LabelEffect("bold large 'うずらフォント', 'MSゴシック'", Math.floor(average_coords.x - 50)
-				, Math.floor(average_coords.y - 25), num_successive_disappearance + "COMBO!", time_to_end_effecting
-				, "#ffffff", ColorTable[num_successive_disappearance % PieceTypes.MAX]));
+		var effects = new Array();
+		effects.push({"type" : "LabelEffect", "font" : "large 'うずらフォント', 'MS ゴシック'", "x" : Math.floor(average_coords.x - 50)
+			, "y" : "average", "text" : "+" + score, "end_time" : 30, "background_color" : "#ffffff"
+				, "color" : ColorTable[pieces[0].type], "num" : -1});
+		/*this.sub_effects.push(new LabelEffect("large 'うずらフォント', 'MS ゴシック'", Math.floor(average_coords.x - 50)
+				, Math.floor(average_coords.y), "+" + score, time_to_end_affecting, "#ffffff", ColorTable[pieces[0].type]));*/
+		
+		effects.push({"type" : "LabelEffect", "font" : "bold large 'うずらフォント', 'MS ゴシック'", "x" : Math.floor(average_coords.x - 50)
+			, "y" : Math.floor(average_coords.y - 25), "text" : num_successive_disappearance + "COMBO!", "end_time" : 30
+			, "background_color" : "#ffffff", "color" : ColorTable[num_successive_disappearance % PieceTypes.MAX], "num" : -1});
+		/*this.sub_effects.push(new LabelEffect("bold large 'うずらフォント', 'MSゴシック'", Math.floor(average_coords.x - 50)
+				, Math.floor(average_coords.y - 25), num_successive_disappearance + "COMBO!", time_to_end_affecting
+				, "#ffffff", ColorTable[num_successive_disappearance % PieceTypes.MAX]));*/
+		
+		effects = effects.concat(xml_manager.getDefinitions(getPropertyName(PieceTypes, pieces[0].type)));
+		var selected_effect_num = Math.floor(Math.random() * xml_manager.getMaxNum(getPropertyName(PieceTypes, pieces[0].type)));
+		var selected_effects = effects.map(function(definition){
+			return (definition.num == selected_effect_num || definition.num == -1) ? 
+					xml_manager.interpret(definition, pieces, average_coords) : null;
+		});
+		
+		this.sub_effects = selected_effects.filter(function(effect){
+			return(effect != null);
+		});
 	},
 	
 	update : function(){
@@ -395,16 +759,16 @@ var PieceEffect = enchant.Class.create(Effect, {
 	}
 });
 
-var EffectAkari = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords
+/*var EffectAkari = enchant.Class.create(PieceEffect, {
+	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
+		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
 				, ColorTable[PieceTypes.AKARI]);
 		
 		this.sub_effects.push(new FadeInLabelEffect("large 'うずらフォント', 'MS ゴシック'", Math.floor(average_coords.x)
-				, Math.floor(average_coords.y), "＼ｱｯｶﾘ~ﾝ／", time_to_end_effecting, "#ffffff", ColorTable[PieceTypes.AKARI]));
+				, Math.floor(average_coords.y), "＼ｱｯｶﾘ~ﾝ／", time_to_end_affecting, "#ffffff", ColorTable[PieceTypes.AKARI]));
 		
 		this.targets.forEach(function(piece){
-			piece.frame = 1;
+			piece.frame = 4;
 		});
 		
 		sound_manager.play(sound_manager.sound_types.AKKARIN);
@@ -420,137 +784,94 @@ var EffectAkari = enchant.Class.create(PieceEffect, {
 });
 
 var EffectAyano = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords
+	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
+		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
 				, ColorTable[PieceTypes.AYANO]);
 		
-		/*this.targets.forEach(function(piece){
-			piece.frame = 1;
-		});*/
 	},
 	
 	update : function(){
 		this.__proto__.__proto__.update.call(this);
 		
-		/*this.targets.forEach(function(piece){
-			piece.opacity -= 0.05;
-		});*/
 	}
 });
 
 var EffectChinatsu = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords
+	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
+		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
 				, ColorTable[PieceTypes.CHINATSU]);
 		
-		/*this.targets.forEach(function(piece){
-			piece.frame = 1;
-		});*/
 	},
 	
 	update : function(){
 		this.__proto__.__proto__.update.call(this);
 		
-		/*this.targets.forEach(function(piece){
-			piece.opacity -= 0.05;
-		});*/
 	}
 });
 
 var EffectChitose = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords
+	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
+		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
 				, ColorTable[PieceTypes.CHITOSE]);
-		
-		/*this.targets.forEach(function(piece){
-			piece.frame = 1;
-		});*/
+	
 	},
 	
 	update : function(){
 		this.__proto__.__proto__.update.call(this);
 		
-		/*this.targets.forEach(function(piece){
-			piece.opacity -= 0.05;
-		});*/
 	}
 });
 
 var EffectHimawari = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords
+	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
+		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
 				, ColorTable[PieceTypes.HIMAWARI]);
 		
-		/*this.targets.forEach(function(piece){
-			piece.frame = 1;
-		});*/
 	},
 	
 	update : function(){
 		this.__proto__.__proto__.update.call(this);
-		
-		/*this.targets.forEach(function(piece){
-			piece.opacity -= 0.05;
-		});*/
+	
 	}
 });
 
 var EffectKyoko = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords
+	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
+		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
 				, ColorTable[PieceTypes.KYOKO]);
 		
-		/*this.targets.forEach(function(piece){
-			piece.frame = 1;
-		});*/
 	},
 	
 	update : function(){
 		this.__proto__.__proto__.update.call(this);
 		
-		/*this.targets.forEach(function(piece){
-			piece.opacity -= 0.05;
-		});*/
 	}
 });
 
 var EffectSakurako = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords
+	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
+		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
 				, ColorTable[PieceTypes.SAKURAKO]);
-		
-		/*this.targets.forEach(function(piece){
-			piece.frame = 1;
-		});*/
+	
 	},
 	
 	update : function(){
 		this.__proto__.__proto__.update.call(this);
-		
-		/*this.targets.forEach(function(piece){
-			piece.opacity -= 0.05;
-		});*/
+	
 	}
 });
 
 var EffectYui = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_effecting, average_coords
+	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
+		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
 				, ColorTable[PieceTypes.YUI]);
-		
-		/*this.targets.forEach(function(piece){
-			piece.frame = 1;
-		});*/
+	
 	},
 	
 	update : function(){
 		this.__proto__.__proto__.update.call(this);
-		
-		/*this.targets.forEach(function(piece){
-			piece.opacity -= 0.05;
-		});*/
 	}
-});
+});*/
 
 var PlayerPieces = enchant.Class.create({
 	initialize : function(pieces, x, y, width, height, v_y){
@@ -611,6 +932,8 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		               "heights" : [32 * 2, 32 * 2, 32 * 2, 32 * 2, 32, 32 * 2, 32 * 2, 32, 32 * 2, 32]};
 		
 		this.addEventListener('enterframe', function(){
+			this.effect_manager.update();
+			
 			if(this.next_normal_state_frame != -1){
 				this.updateDisappearingPieces();
 			}else{
@@ -632,36 +955,29 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 	rotateLeft : function(){
 		with(this){
 			var rotated_pieces = cur_falling_pieces.pieces.map(function(piece){
-				var return_piece = null;
-				if(piece != null){
-					return_piece = createNewPiece(piece.type);
-					return_piece.copyMembersFrom(piece);
+				var return_piece = createNewPiece(piece.type);
+				return_piece.copyMembersFrom(piece);
 					
-					var before = {"x" : piece.position_in_shape.x, "y" : piece.position_in_shape.y};
-					return_piece.position_in_shape.x = Math.round(before.y * 1);	//回転行列にθ=pi/2を代入したもの
-					return_piece.position_in_shape.y = Math.round(-(before.x * 1));	//cos(pi/2)=0,sin(pi/2)=1となるため
+				var before = {"x" : piece.position_in_shape.x, "y" : piece.position_in_shape.y};
+				return_piece.position_in_shape.x = Math.round(before.y * 1);	//回転行列にθ=pi/2を代入したもの
+				return_piece.position_in_shape.y = Math.round(-(before.x * 1));	//cos(pi/2)=0,sin(pi/2)=1となるため
 					
-					return_piece.convertPositionLocalToGlobal();
+				return_piece.convertPositionLocalToGlobal();
 					
-					return_piece.neighbors.swapAntiClockwise();
-				}
+				return_piece.neighbors.swapAntiClockwise();
 				return return_piece;
 			}, this);
 			
 			if(rotated_pieces.every(function(piece){
-				if(piece != null){
-					console.log("["+game.frame+"]");
-					console.log(piece.logPosition());
-					return piece.tryToMove(0, 0) && piece.tryToMove(0, 1);
-				}else{
-					return true;
-				}
+				console.log("["+game.frame+"]");
+				console.log(piece.logPosition());
+				return (piece.tryToMove(0, 0) && piece.tryToMove(0, 1));
 			})){
 				cur_falling_pieces.pieces.forEach(function(piece){
 					game.currentScene.removeChild(piece);
 				});
 				rotated_pieces.forEach(function(piece){
-					if(piece != null){game.currentScene.addChild(piece);}
+					game.currentScene.addChild(piece);
 				});
 				cur_falling_pieces.pieces = rotated_pieces;
 				var tmp = cur_falling_pieces.width;
@@ -677,29 +993,26 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 	rotateRight : function(){
 		with(this){
 			var rotated_pieces = cur_falling_pieces.pieces.map(function(piece){
-				var return_piece = null;
-				if(piece != null){
-					return_piece = createNewPiece(piece.type);
-					return_piece.copyMembersFrom(piece);
+				var return_piece = createNewPiece(piece.type);
+				return_piece.copyMembersFrom(piece);
 					
-					var before = {"x" : piece.position_in_shape.x, "y" : piece.position_in_shape.y};
-					return_piece.position_in_shape.x = Math.round(-(before.y * 1));	//回転行列にθ=pi/2を代入したもの
-					return_piece.position_in_shape.y = Math.round(before.x * 1);	//cos(pi/2)=0,sin(pi/2)=1となるため
+				var before = {"x" : piece.position_in_shape.x, "y" : piece.position_in_shape.y};
+				return_piece.position_in_shape.x = Math.round(-(before.y * 1));	//回転行列にθ=pi/2を代入したもの
+				return_piece.position_in_shape.y = Math.round(before.x * 1);	//cos(pi/2)=0,sin(pi/2)=1となるため
 					
-					return_piece.convertPositionLocalToGlobal();
-					return_piece.neighbors.swapClockwise();
-				}
+				return_piece.convertPositionLocalToGlobal();
+				return_piece.neighbors.swapClockwise();
 				return return_piece;
 			}, this);
 			
 			if(rotated_pieces.every(function(piece){
-				return (piece != null) ? piece.tryToMove(0, 0) && piece.tryToMove(0, 1) : true;
+				return (piece.tryToMove(0, 0) && piece.tryToMove(0, 1));
 			})){
 				cur_falling_pieces.pieces.forEach(function(piece){
 					game.currentScene.removeChild(piece);
 				});
 				rotated_pieces.forEach(function(piece){
-					if(piece != null){game.currentScene.addChild(piece);}
+					game.currentScene.addChild(piece);
 				});
 				cur_falling_pieces.pieces = rotated_pieces;
 				var tmp = cur_falling_pieces.width;
@@ -717,33 +1030,29 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 			if(game.input.left){
 				var tmp_x = cur_falling_pieces.x - size_of_block.width;
 				cur_falling_pieces.x = (cur_falling_pieces.pieces.every(function(piece){
-					return (piece != null) ? (piece.tryToMove(-1, 0) && piece.tryToMove(-1, 1)) : true;
+					return (piece.tryToMove(-1, 0) && piece.tryToMove(-1, 1));
 				})) ? tmp_x : cur_falling_pieces.x;
+				game.input['left'] = false;
 			}else if(game.input.right){
 				var tmp_x = cur_falling_pieces.x + size_of_block.width;
 				cur_falling_pieces.x = (cur_falling_pieces.pieces.every(function(piece){
-					return (piece != null) ? (piece.tryToMove(1, 0) && piece.tryToMove(1, 1)) : true;
+					return (piece.tryToMove(1, 0) && piece.tryToMove(1, 1));
 				})) ? tmp_x : cur_falling_pieces.x;
+				game.input['right'] = false;
 			}else if(game.input.up){
 				rotateLeft();
+				game.input['up'] = false;
 			}else if(game.input.down){
 				rotateRight();
+				game.input['down'] = false;
 			}else if(game.input.a){
 				this.cur_falling_pieces.pieces.sort(function(lhs, rhs){		//下側にある要素を先に調べるためにy座標の順に並べ替える
-					if(lhs != null && rhs != null){
-						return (lhs.position_in_shape.y > rhs.position_in_shape.y) ? -1 :
-							(lhs.position_in_shape.y < rhs.position_in_shape.y) ? 1 : 0;
-					}else if(rhs != null){
-						return 1;
-					}else if(lhs != null){
-						return -1;
-					}
+					return (lhs.position_in_shape.y > rhs.position_in_shape.y) ? -1 :
+						(lhs.position_in_shape.y < rhs.position_in_shape.y) ? 1 : 0;
 				}).forEach(function(piece, index, array){
-					if(piece != null){
-						piece.landOn();
-						array[index] = null;
-						this.moving_pieces.push(piece);
-					}
+					piece.landOn();
+					delete array[index];
+					this.moving_pieces.push(piece);
 				}, this);
 				
 				this.is_ready_for_next_piece = true;
@@ -761,15 +1070,13 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 	updatePieces : function(){
 		this.cur_falling_pieces.y += this.cur_falling_pieces.v_y;
 		this.cur_falling_pieces.pieces.forEach(function(piece){		//シェイプの位置座標を元に操作しているピースを移動させる
-			if(piece != null){
-				piece.convertPositionToCoordinates();
-				piece.convertCoordinatesToPosition();
-				piece.setCoords();
-			}
+			piece.convertPositionToCoordinates();
+			piece.convertCoordinatesToPosition();
+			piece.setCoords();
 		}, this);
 		
 		this.cur_falling_pieces.pieces.forEach(function(piece, index, array){
-			if(piece != null && !piece.tryToMove(0, 1)){	//自分の下1ますが空いているかどうか確かめる
+			if(!piece.tryToMove(0, 1)){	//自分の下1ますが空いているかどうか確かめる
 				if(piece.position.y <= 2){		//上から数えて3段目までピースがたまってしまっていたら、ゲームオーバー
 					var gameover_scene = new GameOverScene((this.x + this.width) / 2, (this.y + this.height) / 2);
 					game.pushScene(gameover_scene);
@@ -784,24 +1091,16 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 				}
 				
 				this.moving_pieces.push(piece);
-				array[index] = null;
+				delete array[index];
 
 				array.sort(function(lhs, rhs){		//※下側にある要素を先に調べるためｙ座標の大きい順で並べ替える
-					if(lhs != null && rhs != null){
-						return (lhs.position_in_shape.y > rhs.position_in_shape.y) ? -1 :
-							(lhs.position_in_shape.y < rhs.position_in_shape.y) ? 1 : 0;
-					}else if(rhs != null){
-						return 1;
-					}else if(lhs != null){
-						return -1;
-					}
+					return (lhs.position_in_shape.y > rhs.position_in_shape.y) ? -1 :
+						(lhs.position_in_shape.y < rhs.position_in_shape.y) ? 1 : 0;
 				}).forEach(function(piece, index, array){
-					if(piece != null){
-						piece.landOn();
-						array[index] = null;
-						this.moving_pieces.push(piece);
-						if(game.is_debug){console.log(piece.logPosition());}
-					}
+					piece.landOn();
+					delete array[index];
+					this.moving_pieces.push(piece);
+					if(game.is_debug){console.log(piece.logPosition());}
 				}, this);
 				
 				this.is_ready_for_next_piece = true;
@@ -835,6 +1134,8 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 					[-1, 1, -4, 4].forEach(function(index, cur_index2){
 						if(0 <= cur_index + index && cur_index + index < 8){piece.neighbors[cur_index2] = array[cur_index + index];}
 					});
+				}else{
+					delete array[cur_index];	//nullのピースは削除する
 				}
 			});
 			
@@ -867,8 +1168,6 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 			this.disappearing_pieces.splice(0);
 			this.next_normal_state_frame = -1;
 			this.is_ready_for_next_piece = true;
-		}else{
-			this.effect_manager.update();
 		}
 	},
 	
@@ -879,7 +1178,9 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		var start_searching_pieces = new Array();			//探索の起点とするピースたち
 		this.moving_pieces.forEach(function(piece, i, array){			//動いてきたピースに周りのピースへの参照を持たせる
 			this.addNeighborsReference(piece);
-			start_searching_pieces.push(piece);
+			var index = start_searching_pieces.indexOf(piece);
+			if(index == -1){start_searching_pieces.push(piece);}
+			
 			piece.neighbors.forEach(function(neighbor){		//動いてきたピースの周りにいるピースにも再度参照を追加する
 				if(neighbor != null){
 					this.addNeighborsReference(neighbor);
@@ -891,12 +1192,12 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 						if(w_neighbor != null){
 							this.addNeighborsReference(w_neighbor);
 							
-							var index = start_searching_pieces.indexOf(w_neighbor), index2 = array.indexOf(w_neighbor);
-							if(index == -1 && index2 == -1){start_searching_pieces.push(w_neighbor);}
+							var index4 = start_searching_pieces.indexOf(w_neighbor), index5 = array.indexOf(w_neighbor);
+							if(index4 == -1 && index5 == -1){start_searching_pieces.push(w_neighbor);}
 							w_neighbor.neighbors.forEach(function(t_neighbor){
 								if(t_neighbor != null){
-									var index = start_searching_pieces.indexOf(t_neighbor), index2 = array.indexOf(t_neighbor);
-									if(index == -1 && index2 == -1){start_searching_pieces.push(t_neighbor);}
+									var index6 = start_searching_pieces.indexOf(t_neighbor), index7 = array.indexOf(t_neighbor);
+									if(index6 == -1 && index7 == -1){start_searching_pieces.push(t_neighbor);}
 								}
 							});
 						}
@@ -909,9 +1210,9 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 			if(piece != null){piece.neighbors_buffer = piece.neighbors.slice(0);}
 		});
 		
-		start_searching_pieces.forEach(function(piece){		//同じ種類のピースの塊を探す
+		start_searching_pieces.forEach(function(piece, i, array){		//同じ種類のピースの塊を探す
 			var group = new Array();
-			piece.searchForSameTypeOfPiece(group);
+			piece.searchForSameTypeOfPiece(group, array);
 			
 			if(group.length >= 3){this.candidates_for_disappearing_pieces.push(group);}
 		}, this);
@@ -929,6 +1230,9 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 				}).forEach(function(piece, i, array){
 					this.disappearing_pieces.push(piece);
 					
+					piece.makeUnconnected();
+					this.effect_manager.removeEffect(piece);
+					
 					for(var upper = piece.neighbors[2];; upper = upper.neighbors[2]){
 						if(upper == null){break;}
 						
@@ -936,6 +1240,10 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 						var index2 = this.moving_pieces.indexOf(upper);	//同時に2カ所以上で消えるピースが出てくる可能性があるため
 						if(index == -1 && index2 == -1){
 							this.moving_pieces.push(upper);
+							upper.makeUnconnected();
+							if(upper.neighbors[0] != null){upper.neighbors[0].makeUnconnected();}
+							if(upper.neighbors[1] != null){upper.neighbors[1].makeUnconnected();}
+							this.effect_manager.removeEffect(upper);
 							console.log("the piece at"+upper.logPosition()+"is going to move.");
 						}else{
 							break;
@@ -947,7 +1255,7 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 				this.score_label.addScore(score_diff);	//スコアを追加する
 				this.effect_manager.addEffect(this.createNewEffect(group.slice(0), score_diff, group[0].type));
 				if(game.is_debug){console.log("score added! "+score_diff+"points added!");}
-				sound_manager.play(this.num_successive_disappearance % PieceTypes.MAX - 1);
+				sound_manager.play(this.num_successive_disappearance % 8 - 1);
 				this.next_normal_state_frame = game.frame + 30;
 			}else if(group.length >= 3){		//3個の場合はカップリングを探す
 				group.forEach(function(piece){
@@ -974,6 +1282,9 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 					}).forEach(function(piece, i, array){
 						this.disappearing_pieces.push(piece);
 						
+						piece.makeUnconnected();
+						this.effect_manager.removeEffect(piece);
+						
 						for(var upper = piece.neighbors[2];; upper = upper.neighbors[2]){
 							if(upper == null){break;}
 							
@@ -981,6 +1292,10 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 							var index2 = this.moving_pieces.indexOf(upper);	//同時に2カ所以上で消えるピースが出てくる可能性があるため
 							if(index == -1 && index2 == -1){
 								this.moving_pieces.push(upper);
+								upper.makeUnconnected();
+								if(upper.neighbors[0] != null){upper.neighbors[0].makeUnconnected();}
+								if(upper.neighbors[1] != null){upper.neighbors[1].makeUnconnected();}
+								this.effect_manager.removeEffect(upper);
 								console.log("the piece at"+upper.logPosition()+"is going to move.");
 							}else{
 								break;
@@ -1087,7 +1402,8 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 	},
 	
 	createNewEffect : function(group, score, type){
-		var coordinates = {"x" : 0, "y" : 0};
+		return new PiecesEffect(group, score, this.num_successive_disappearance, game.frame + 30);
+		/*var coordinates = {"x" : 0, "y" : 0};
 		group.forEach(function(piece){
 			coordinates.x += piece.real_coords.x;
 			coordinates.y += piece.real_coords.y;
@@ -1129,7 +1445,7 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 				return new EffectYui(group, score, num_successive_disappearance, game.frame + 30, coordinates);
 				break;
 			}
-		}
+		}*/
 	},
 	
 	/**
@@ -1311,6 +1627,7 @@ window.onload = function(){
 	game.is_debug = true;
 	game.onload = function(){
 		sound_manager = new SoundManager();
+		xml_manager = new XmlManager("Effects.xml");
 		var stage = new Stage();
 		game.pushScene(stage);
 	};
