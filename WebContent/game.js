@@ -63,6 +63,13 @@ function isInRange(lower, upper, val){
 	return(lower <= val && val < upper);
 }
 
+/**
+ * この配列に引数のオブジェクトがすでに含まれているかを返す
+ */
+Array.prototype.contains = function(obj){
+	return (this.indexOf(obj) != -1);
+}
+
 Array.prototype.swapClockwise = function(){
 	var tmp = this[this.length - 1];
 	this.forEach(function(elem, index, array){
@@ -257,6 +264,7 @@ var Piece = enchant.Class.create(enchant.Sprite, {
 	},
 	
 	searchForSameTypeOfPiece : function(group, starting_pieces){
+		if(group.contains(this)){return;}
 		group.push(this);
 		this.neighbors_buffer.forEach(function(piece, cur_index, array){
 			if(piece != null && this.isOfSameType(piece)){
@@ -713,7 +721,7 @@ var SoundEffect = enchant.Class.create(Effect, {
 });
 
 var PiecesEffect = enchant.Class.create(Effect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting/*, average_coords, score_label_color*/){
+	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting){
 		Effect.call(this, time_to_end_affecting);
 		
 		this.sub_effects = new Array();
@@ -728,17 +736,12 @@ var PiecesEffect = enchant.Class.create(Effect, {
 		
 		var effects = new Array();
 		effects.push({"type" : "LabelEffect", "font" : "large 'うずらフォント', 'MS ゴシック'", "x" : Math.floor(average_coords.x - 50)
-			, "y" : "average", "text" : "+" + score, "end_time" : 30, "background_color" : "#ffffff"
+			, "y" : Math.floor(average_coords.y - 20), "text" : "+" + score, "end_time" : 30, "background_color" : "#ffffff"
 				, "color" : ColorTable[pieces[0].type], "num" : -1});
-		/*this.sub_effects.push(new LabelEffect("large 'うずらフォント', 'MS ゴシック'", Math.floor(average_coords.x - 50)
-				, Math.floor(average_coords.y), "+" + score, time_to_end_affecting, "#ffffff", ColorTable[pieces[0].type]));*/
 		
 		effects.push({"type" : "LabelEffect", "font" : "bold large 'うずらフォント', 'MS ゴシック'", "x" : Math.floor(average_coords.x - 50)
-			, "y" : Math.floor(average_coords.y - 25), "text" : num_successive_disappearance + "COMBO!", "end_time" : 30
+			, "y" : Math.floor(average_coords.y - 40), "text" : num_successive_disappearance + "COMBO!", "end_time" : 30
 			, "background_color" : "#ffffff", "color" : ColorTable[num_successive_disappearance % PieceTypes.MAX], "num" : -1});
-		/*this.sub_effects.push(new LabelEffect("bold large 'うずらフォント', 'MSゴシック'", Math.floor(average_coords.x - 50)
-				, Math.floor(average_coords.y - 25), num_successive_disappearance + "COMBO!", time_to_end_affecting
-				, "#ffffff", ColorTable[num_successive_disappearance % PieceTypes.MAX]));*/
 		
 		effects = effects.concat(xml_manager.getDefinitions(getPropertyName(PieceTypes, pieces[0].type)));
 		var selected_effect_num = Math.floor(Math.random() * xml_manager.getMaxNum(getPropertyName(PieceTypes, pieces[0].type)));
@@ -758,120 +761,6 @@ var PiecesEffect = enchant.Class.create(Effect, {
 		});
 	}
 });
-
-/*var EffectAkari = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
-				, ColorTable[PieceTypes.AKARI]);
-		
-		this.sub_effects.push(new FadeInLabelEffect("large 'うずらフォント', 'MS ゴシック'", Math.floor(average_coords.x)
-				, Math.floor(average_coords.y), "＼ｱｯｶﾘ~ﾝ／", time_to_end_affecting, "#ffffff", ColorTable[PieceTypes.AKARI]));
-		
-		this.targets.forEach(function(piece){
-			piece.frame = 4;
-		});
-		
-		sound_manager.play(sound_manager.sound_types.AKKARIN);
-	},
-	
-	update : function(){
-		this.__proto__.__proto__.update.call(this);
-		
-		this.targets.forEach(function(piece){
-			piece.opacity -= 0.05;
-		});
-	}
-});
-
-var EffectAyano = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
-				, ColorTable[PieceTypes.AYANO]);
-		
-	},
-	
-	update : function(){
-		this.__proto__.__proto__.update.call(this);
-		
-	}
-});
-
-var EffectChinatsu = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
-				, ColorTable[PieceTypes.CHINATSU]);
-		
-	},
-	
-	update : function(){
-		this.__proto__.__proto__.update.call(this);
-		
-	}
-});
-
-var EffectChitose = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
-				, ColorTable[PieceTypes.CHITOSE]);
-	
-	},
-	
-	update : function(){
-		this.__proto__.__proto__.update.call(this);
-		
-	}
-});
-
-var EffectHimawari = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
-				, ColorTable[PieceTypes.HIMAWARI]);
-		
-	},
-	
-	update : function(){
-		this.__proto__.__proto__.update.call(this);
-	
-	}
-});
-
-var EffectKyoko = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
-				, ColorTable[PieceTypes.KYOKO]);
-		
-	},
-	
-	update : function(){
-		this.__proto__.__proto__.update.call(this);
-		
-	}
-});
-
-var EffectSakurako = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
-				, ColorTable[PieceTypes.SAKURAKO]);
-	
-	},
-	
-	update : function(){
-		this.__proto__.__proto__.update.call(this);
-	
-	}
-});
-
-var EffectYui = enchant.Class.create(PieceEffect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords, target){
-		PieceEffect.call(this, pieces, score, num_successive_disappearance, time_to_end_affecting, average_coords
-				, ColorTable[PieceTypes.YUI]);
-	
-	},
-	
-	update : function(){
-		this.__proto__.__proto__.update.call(this);
-	}
-});*/
 
 var PlayerPieces = enchant.Class.create({
 	initialize : function(pieces, x, y, width, height, v_y){
@@ -1150,14 +1039,16 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		if(game.frame > this.next_normal_state_frame){		//エフェクトをかけおわるフレームになったので、その後処理をする
 			this.disappearing_pieces.forEach(function(piece){
 				this.removePiece(piece);
-				if(game.is_debug){console.log("the piece at"+piece.logPosition()+"is going to disappear.");}
+				if(game.is_debug){console.log("the piece at"+piece.logPosition()+"which is a(n) \""+getPropertyName(PieceTypes, piece.type)
+						+"\" is going to disappear.");}
 				game.currentScene.removeChild(piece);
 			}, this);
 			
 			this.moving_pieces.forEach(function(piece){		//動くピースリストに追加されたピースを着地させる
 				this.removePiece(piece);
 				if(game.is_debug){
-					console.log("the piece at"+piece.logPosition()+"is moving to");
+					console.log("the piece at"+piece.logPosition()+"which is a(n) \""+getPropertyName(PieceTypes, piece.type)
+							+"\" is moving to");
 				}
 				piece.landOn();
 				if(game.is_debug){
@@ -1178,28 +1069,32 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		var start_searching_pieces = new Array();			//探索の起点とするピースたち
 		this.moving_pieces.forEach(function(piece, i, array){			//動いてきたピースに周りのピースへの参照を持たせる
 			this.addNeighborsReference(piece);
-			var index = start_searching_pieces.indexOf(piece);
-			if(index == -1){start_searching_pieces.push(piece);}
+			if(!start_searching_pieces.contains(piece)){start_searching_pieces.push(piece);}
 			
 			piece.neighbors.forEach(function(neighbor){		//動いてきたピースの周りにいるピースにも再度参照を追加する
 				if(neighbor != null){
 					this.addNeighborsReference(neighbor);
 					
-					var index2 = start_searching_pieces.indexOf(neighbor), index3 = array.indexOf(neighbor);
-					if(index2 == -1 && index3 == -1){start_searching_pieces.push(neighbor);}	//動いてきたピースの３つ隣のピースまで探索の起点にする
+					if(!start_searching_pieces.contains(neighbor) && !array.contains(neighbor)){
+						start_searching_pieces.push(neighbor);	//動いてきたピースの３つ隣のピースまで探索の起点にする
+					}
 					
 					neighbor.neighbors.forEach(function(w_neighbor){
 						if(w_neighbor != null){
 							this.addNeighborsReference(w_neighbor);
 							
-							var index4 = start_searching_pieces.indexOf(w_neighbor), index5 = array.indexOf(w_neighbor);
-							if(index4 == -1 && index5 == -1){start_searching_pieces.push(w_neighbor);}
+							if(!start_searching_pieces.contains(w_neighbor) && !array.contains(w_neighbor)){
+								start_searching_pieces.push(w_neighbor);
+							}
 							w_neighbor.neighbors.forEach(function(t_neighbor){
 								if(t_neighbor != null){
-									var index6 = start_searching_pieces.indexOf(t_neighbor), index7 = array.indexOf(t_neighbor);
-									if(index6 == -1 && index7 == -1){start_searching_pieces.push(t_neighbor);}
+									this.addNeighborsReference(t_neighbor);
+									
+									if(!start_searching_pieces.contains(t_neighbor) && !array.contains(t_neighbor)){
+										start_searching_pieces.push(t_neighbor);
+									}
 								}
-							});
+							}, this);
 						}
 					}, this);
 				}
@@ -1222,7 +1117,7 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		this.candidates_for_disappearing_pieces.sort(function(lhs, rhs){	//同一種のグループを優先して探せるように並べ替えを行う
 			return (lhs.length > rhs.length) ? 1 :
 				(lhs.length == rhs.length) ? 0 : -1;
-		}).forEach(function(group, index){
+		}).forEach(function(group, cur_index){
 			if(group.length >= 4){		//4個以上は同一種からのみなるグループを探す
 				group.sort(function(lhs, rhs){		//下にあるピースから調べるために並べ替えを行う
 					return (lhs.position.y > rhs.position.y) ? -1 :
@@ -1236,15 +1131,13 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 					for(var upper = piece.neighbors[2];; upper = upper.neighbors[2]){
 						if(upper == null){break;}
 						
-						var index = array.indexOf(upper);		//自分の上にいるピースの中で消えてしまうもの以外をこれから動くピースリストに追加する
-						var index2 = this.moving_pieces.indexOf(upper);	//同時に2カ所以上で消えるピースが出てくる可能性があるため
-						if(index == -1 && index2 == -1){
+						if(!array.contains(upper) && !this.moving_pieces.contains(upper)){		/*自分の上にいるピースの中で消えてしまうもの以外をこれから動くピースリストに追加する
+																								同時に2カ所以上で消えるピースが出てくる可能性があるため*/
 							this.moving_pieces.push(upper);
 							upper.makeUnconnected();
 							if(upper.neighbors[0] != null){upper.neighbors[0].makeUnconnected();}
 							if(upper.neighbors[1] != null){upper.neighbors[1].makeUnconnected();}
 							this.effect_manager.removeEffect(upper);
-							console.log("the piece at"+upper.logPosition()+"is going to move.");
 						}else{
 							break;
 						}
@@ -1253,27 +1146,28 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 				
 				var score_diff = 100 * Math.pow(2, this.num_successive_disappearance) * group.length;
 				this.score_label.addScore(score_diff);	//スコアを追加する
-				this.effect_manager.addEffect(this.createNewEffect(group.slice(0), score_diff, group[0].type));
+				this.effect_manager.addEffect(this.createNewEffect(group.slice(0), score_diff));
 				if(game.is_debug){console.log("score added! "+score_diff+"points added!");}
 				sound_manager.play(this.num_successive_disappearance % 8 - 1);
 				this.next_normal_state_frame = game.frame + 30;
 			}else if(group.length >= 3){		//3個の場合はカップリングを探す
 				group.forEach(function(piece){
 					pieces_searching_for_couple.push(piece);		//カップリングを探すピース
-					couple_indices.push(index);						//上記のピースが所属するグループ番号
+					couple_indices.push(cur_index);						//上記のピースが所属するグループ番号
 				});
 			}
 		}, this);
 		
 		var candidates = this.candidates_for_disappearing_pieces;
-		pieces_searching_for_couple.forEach(function(piece_info, i, couples_array){
-			if(this.disappearing_pieces.indexOf(piece_info) != -1){return;}
+		pieces_searching_for_couple.every(function(piece_info, i, couples_array){
+			var result = true;
 			
-			piece_info.neighbors.forEach(function(neighbor){
+			piece_info.neighbors.every(function(neighbor){
 				if(neighbor == null){return;}
 				var index0 = couples_array.indexOf(neighbor);	//pieceの周りにカップリングを探しているピースがいないか調べる
 				if(index0 != -1 && couple_indices[i] != couple_indices[index0] 	//同じグループに存在しておらず、グループのピース数が同じ
 				&& candidates[couple_indices[i]].length == candidates[couple_indices[index0]].length){
+					result = false;
 					var target_index = couple_indices[index0];
 					var disappearing_pieces = candidates[couple_indices[i]].concat(candidates[couple_indices[index0]]);
 					disappearing_pieces.sort(function(lhs, rhs){			//下にあるピースから調べるために並べ替える
@@ -1288,15 +1182,13 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 						for(var upper = piece.neighbors[2];; upper = upper.neighbors[2]){
 							if(upper == null){break;}
 							
-							var index = array.indexOf(upper);		//自分の上にいるピースの中で消えてしまうもの以外をこれから動くピースリストに追加する
-							var index2 = this.moving_pieces.indexOf(upper);	//同時に2カ所以上で消えるピースが出てくる可能性があるため
-							if(index == -1 && index2 == -1){
+							if(!array.contains(upper) && !this.moving_pieces.contains(upper)){		/*自分の上にいるピースの中で消えてしまうもの以外をこれから動くピースリストに追加する
+																									同時に2カ所以上で消えるピースが出てくる可能性があるため*/
 								this.moving_pieces.push(upper);
 								upper.makeUnconnected();
 								if(upper.neighbors[0] != null){upper.neighbors[0].makeUnconnected();}
 								if(upper.neighbors[1] != null){upper.neighbors[1].makeUnconnected();}
 								this.effect_manager.removeEffect(upper);
-								console.log("the piece at"+upper.logPosition()+"is going to move.");
 							}else{
 								break;
 							}
@@ -1305,15 +1197,17 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 					
 					var score_diff = Math.floor(75 * Math.pow(1.5, this.num_successive_disappearance) * disappearing_pieces.length);
 					this.score_label.addScore(score_diff);		//スコアを追加する
-					this.effect_manager.addEffect(this.createNewEffect(candidates[couple_indices[i]].slice(0), score_diff / 2,
-							piece_info.type));	//それぞれのグループのピースの種類に対応するエフェクトを追加する
-					this.effect_manager.addEffect(this.createNewEffect(candidates[target_index].slice(0), score_diff / 2,
-							neighbor.type));
+					this.effect_manager.addEffect(this.createNewEffect(candidates[couple_indices[i]].slice(0), score_diff / 2));	//それぞれのグループのピースの種類に対応するエフェクトを追加する
+					this.effect_manager.addEffect(this.createNewEffect(candidates[target_index].slice(0), score_diff / 2));
 					if(game.is_debug){console.log("score added! "+score_diff+"points added!");}
 					sound_manager.play(this.num_successive_disappearance % 8 - 1);
 					this.next_normal_state_frame = game.frame + 30;
 				}
+				
+				return result;
 			}, this);
+			
+			return result;
 		}, this);
 		
 		if(this.score_label.getScore() - prev_score > 0){	//スコアが増えてたら連鎖数を増やして、まだ新しいピースが出現しないようにする
@@ -1401,51 +1295,8 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		throw new TypeError();
 	},
 	
-	createNewEffect : function(group, score, type){
+	createNewEffect : function(group, score){
 		return new PiecesEffect(group, score, this.num_successive_disappearance, game.frame + 30);
-		/*var coordinates = {"x" : 0, "y" : 0};
-		group.forEach(function(piece){
-			coordinates.x += piece.real_coords.x;
-			coordinates.y += piece.real_coords.y;
-		})
-		coordinates.x /= group.length;
-		coordinates.y /= group.length;
-		
-		with(this){
-			switch(type){
-			case PieceTypes.AKARI : 
-				return new EffectAkari(group, score, num_successive_disappearance, game.frame + 30, coordinates);
-				break;
-				
-			case PieceTypes.AYANO : 
-				return new EffectAyano(group, score, num_successive_disappearance, game.frame + 30, coordinates);
-				break;
-				
-			case PieceTypes.CHINATSU : 
-				return new EffectChinatsu(group, score, num_successive_disappearance, game.frame + 30, coordinates);
-				break;
-				
-			case PieceTypes.CHITOSE : 
-				return new EffectChitose(group, score, num_successive_disappearance, game.frame + 30, coordinates);
-				break;
-				
-			case PieceTypes.HIMAWARI : 
-				return new EffectHimawari(group, score, num_successive_disappearance, game.frame + 30, coordinates);
-				break;
-				
-			case PieceTypes.KYOKO : 
-				return new EffectKyoko(group, score, num_successive_disappearance, game.frame + 30, coordinates);
-				break;
-				
-			case PieceTypes.SAKURAKO : 
-				return new EffectSakurako(group, score, num_successive_disappearance, game.frame + 30, coordinates);
-				break;
-				
-			case PieceTypes.YUI : 
-				return new EffectYui(group, score, num_successive_disappearance, game.frame + 30, coordinates);
-				break;
-			}
-		}*/
 	},
 	
 	/**
