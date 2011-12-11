@@ -13,13 +13,15 @@
 	<EffectChitose num="0" type="LabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" end_time="30" background_color="#ffffff" color="CHITOSE">ほなうちは、妄想する準備しとくわ～</EffectChitose>
 	<EffectHimawari num="0" type="LabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" end_time="30" background_color="#ffffff" color="HIMAWARI">この調子でわたくしと生徒会副会長を目指しましょう！</EffectHimawari>
 	<EffectKyoko num="0" type="LabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" end_time="30" background_color="#ffffff" color="KYOKO">＼ラムレーズン！／</EffectKyoko>
+	<EffectKyoko num="1" type="LabelEffect" font="x-large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" end_time="30" background_color="#ffffff" color="KYOKO">＼きらきらにゃ～んにゃ～ん／</EffectKyoko>
 	<EffectSakurako num="0" type="LabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" end_time="30" background_color="#ffffff" color="SAKURAKO">絶対生徒会副会長の座は向日葵にはやらないもん！</EffectSakurako>
 	<EffectYui num="0" type="LabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" end_time="30" background_color="#ffffff" color="YUI">・・本当に私でよかったの？</EffectYui>
+	<EffectYui num="1" type="LabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" end_time="30" background_color="#ffffff" color="YUI">えっと・・先に帰るね？</EffectYui>
 
-<!--  
-	<EffectAkari with="chinatsu" type="LabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" end_time="15" background_color="#ffffff" color="AKARI">＼ｱｯｶ・・・</EffectAkari>
-	<EffectChinatsu with="akari" type="LabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" end_time="10" background_color="#ffffff" color="CHINATSU">あかりちゃ～ん</EffectChinatsu>
-	<EffectChinatsu with="akari" type="LabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" start_time="10" end_time="25" background_color="#ffffff" color="CHINATSU">またキスの練習しよ～</EffectChinatsu>
-	<EffectAkari with="chinatsu" type="LabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" start_time="15" end_time="30" background_color="#ffffff" color="AKARI">えええええ！？</EffectAkari>
--->
+	<set num="0">
+		<EffectAkari with="chinatsu" type="FadeInLabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" end_time="15" background_color="#ffffff" color="AKARI" rate="0.1">＼ｱｯｶ・・・</EffectAkari>
+		<EffectChinatsu with="akari" type="LabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" end_time="10" background_color="#ffffff" color="CHINATSU">あかりちゃ～ん</EffectChinatsu>
+		<EffectChinatsu with="akari" type="LabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" start_time="10" end_time="25" background_color="#ffffff" color="CHINATSU">またキスの練習しよ～</EffectChinatsu>
+		<EffectAkari with="chinatsu" type="LabelEffect" font="large 'うずらフォント', 'MS ゴシック'" x="average with margin" y="average with margin" start_time="15" end_time="30" background_color="#ffffff" color="AKARI">えええええ！？</EffectAkari>
+	</set>
 </Effects>

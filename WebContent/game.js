@@ -384,7 +384,9 @@ var XmlManager = enchant.Class.create({
 					obj['text'] = child.textContent;
 					obj['name'] = child.tagName.toLowerCase();
 					effects_definitions.push(obj);
-					max_nums.push({"key" : (obj.target != undefined) ? obj.name + " with " + obj.target : obj.name, "num" : num});
+					if(child.nextElementSibling == null || child.nextElementSibling.getAttribute("num") == 0){
+						max_nums.push({"key" : (obj.target != undefined) ? obj.name + " with " + obj.target : obj.name, "num" : num});
+					}
 				}
 			}
 		}
@@ -398,9 +400,14 @@ var XmlManager = enchant.Class.create({
 				var results = effects_definitions.filter(function(definition){
 					return(definition.name == name && definition['with'] == target);
 				});
+				if(results.length == 0){
+					results = effects_definitions.filter(function(definition){
+						return (definition.name == name && definition['with'] == undefined);
+					});
+				}
 			}else{
 				var results = effects_definitions.filter(function(definition){
-					return(definition.name == name);
+					return(definition.name == name && definition['with'] == undefined);
 				});
 			}
 			
@@ -412,7 +419,7 @@ var XmlManager = enchant.Class.create({
 			var result = -1;
 			max_nums.every(function(obj){
 				if(obj.key == searching_str){
-					result = obj.num + 1;
+					result = obj.num + 1;	//乱数で使うため実際に出現する数より1多く返す
 					return false;
 				}
 				
@@ -721,7 +728,7 @@ var SoundEffect = enchant.Class.create(Effect, {
 });
 
 var PiecesEffect = enchant.Class.create(Effect, {
-	initialize : function(pieces, score, num_successive_disappearance, time_to_end_affecting){
+	initialize : function(pieces, targets, score, num_successive_disappearance, time_to_end_affecting){
 		Effect.call(this, time_to_end_affecting);
 		
 		this.sub_effects = new Array();
@@ -743,8 +750,10 @@ var PiecesEffect = enchant.Class.create(Effect, {
 			, "y" : Math.floor(average_coords.y - 40), "text" : num_successive_disappearance + "COMBO!", "end_time" : 30
 			, "background_color" : "#ffffff", "color" : ColorTable[num_successive_disappearance % PieceTypes.MAX], "num" : -1});
 		
-		effects = effects.concat(xml_manager.getDefinitions(getPropertyName(PieceTypes, pieces[0].type)));
-		var selected_effect_num = Math.floor(Math.random() * xml_manager.getMaxNum(getPropertyName(PieceTypes, pieces[0].type)));
+		effects = effects.concat(xml_manager.getDefinitions(getPropertyName(PieceTypes, pieces[0].type)
+				, getPropertyName(PieceTypes, (targets != undefined) ? targets[0].type : undefined)));
+		var selected_effect_num = Math.floor(Math.random() * xml_manager.getMaxNum(getPropertyName(PieceTypes, pieces[0].type)
+				, getProprtyName(PieceTypes, (targets != undefined) ? targets[0].type : undefined)));
 		var selected_effects = effects.map(function(definition){
 			return (definition.num == selected_effect_num || definition.num == -1) ? 
 					xml_manager.interpret(definition, pieces, average_coords) : null;
@@ -1131,7 +1140,7 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 					for(var upper = piece.neighbors[2];; upper = upper.neighbors[2]){
 						if(upper == null){break;}
 						
-						if(!array.contains(upper) && !this.moving_pieces.contains(upper)){		/*自分の上にいるピースの中で消えてしまうもの以外をこれから動くピースリストに追加する
+						if(!array.contains(upper) && !this.disappearing_pieces.contains(upper)){/*自分の上にいるピースの中で消えてしまうもの以外をこれから動くピースリストに追加する
 																								同時に2カ所以上で消えるピースが出てくる可能性があるため*/
 							this.moving_pieces.push(upper);
 							upper.makeUnconnected();
@@ -1182,7 +1191,7 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 						for(var upper = piece.neighbors[2];; upper = upper.neighbors[2]){
 							if(upper == null){break;}
 							
-							if(!array.contains(upper) && !this.moving_pieces.contains(upper)){		/*自分の上にいるピースの中で消えてしまうもの以外をこれから動くピースリストに追加する
+							if(!array.contains(upper) && !this.disappearing_pieces.contains(upper)){/*自分の上にいるピースの中で消えてしまうもの以外をこれから動くピースリストに追加する
 																									同時に2カ所以上で消えるピースが出てくる可能性があるため*/
 								this.moving_pieces.push(upper);
 								upper.makeUnconnected();
@@ -1197,8 +1206,9 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 					
 					var score_diff = Math.floor(75 * Math.pow(1.5, this.num_successive_disappearance) * disappearing_pieces.length);
 					this.score_label.addScore(score_diff);		//スコアを追加する
-					this.effect_manager.addEffect(this.createNewEffect(candidates[couple_indices[i]].slice(0), score_diff / 2));	//それぞれのグループのピースの種類に対応するエフェクトを追加する
-					this.effect_manager.addEffect(this.createNewEffect(candidates[target_index].slice(0), score_diff / 2));
+					var pieces = candidates[couple_indices[i]].slice(0), targets = candidates[target_index].slice(0);
+					this.effect_manager.addEffect(this.createNewEffect(pieces, score_diff / 2, targets));	//それぞれのグループのピースの種類に対応するエフェクトを追加する
+					this.effect_manager.addEffect(this.createNewEffect(targets, score_diff / 2, pieces));
 					if(game.is_debug){console.log("score added! "+score_diff+"points added!");}
 					sound_manager.play(this.num_successive_disappearance % 8 - 1);
 					this.next_normal_state_frame = game.frame + 30;
@@ -1295,8 +1305,8 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		throw new TypeError();
 	},
 	
-	createNewEffect : function(group, score){
-		return new PiecesEffect(group, score, this.num_successive_disappearance, game.frame + 30);
+	createNewEffect : function(group, score, targets){
+		return new PiecesEffect(group, targets, score, this.num_successive_disappearance, game.frame + 30);
 	},
 	
 	/**
