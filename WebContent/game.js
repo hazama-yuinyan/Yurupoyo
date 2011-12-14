@@ -36,6 +36,45 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * 
+ * Mersenne Twister in JavaScript based on "mt19937ar.c"
+ * 
+ * JavaScript version by Magicant: Copyright (C) 2005 Magicant
+ * 
+ * 
+ * Original C version by Makoto Matsumoto and Takuji Nishimura
+ * http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/mt.html
+ *
+ * Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ *   
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ *   
+ * 3. The names of its contributors may not be used to endorse or promote 
+ *   products derived from this software without specific prior written 
+ *   permission.
+ *   
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ *   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ *   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ *   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ *   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 
@@ -47,6 +86,16 @@ const NUM_HORIZONTAL_BLOCKS = 10;
 var PieceTypes = {"AKARI" : 0, "AYANO" : 1, "CHINATSU" : 2, "CHITOSE" : 3, "HIMAWARI" : 4, "KYOKO" : 5, "SAKURAKO" : 6, "YUI" : 7, "MAX" : 8};
 var ColorTable = ["rgb(233, 109, 140)", "rgb(138, 73, 108)", "rgb(252, 209, 219)", "rgb(222, 217, 240)", "rgb(103, 122, 157)",
                     "rgb(234, 223, 186)", "rgb(232, 205, 182)", "rgb(84, 61, 70)"];
+
+!function(d,s,id){
+	var js,fjs=d.getElementsByTagName(s)[0];
+	if(!d.getElementById(id)){
+		js=d.createElement(s);
+		js.id=id;
+		js.src="https://platform.twitter.com/widgets.js";
+		fjs.parentNode.insertBefore(js,fjs);
+	}
+}(document,"script","twitter-wjs");
 
 /**
  * 四捨五入する関数
@@ -97,7 +146,7 @@ String.prototype.fitInWidth = function(max_width){
 			var s = this.slice(first, last);
 			if(s.getExpansion().width <= max_width){
 				s += "<br>";
-				result.concat(s);
+				result = result.concat(s);
 				break;
 			}
 		}
@@ -156,7 +205,7 @@ Array.prototype.swapAntiClockwise = function(){
 }
 
 var GameOverScene = enchant.Class.create(enchant.Scene, {
-	initialize : function(x, y){
+	initialize : function(x, y, score){
 		enchant.Scene.call(this);
 		
 		var gameover_label = new enchant.Label("GAME OVER");
@@ -167,7 +216,17 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 		gameover_label.width = gameover_label.text.getExpansion().width;
 		gameover_label.backgroundColor = "#ffffff";
 		gameover_label.color = "#ff1512";
+		
+		var tweet_button = new enchant.Label("");
+		tweet_button.text = '<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://bit.ly/sIgqhY" '
+			+ 'data-counturl="http://filesforbots.me.land.to/downloads/Yurupoyo/index.html" data-via="hazama_akkarin" '
+			+ 'data-text="ゆるぽよで' + score + '点の記録を残したよ！" data-lang="ja">Tweet</a>';
+		tweet_button.x = x;
+		tweet_button.y = y + 50;
+		tweet_button.backgroundColor = "#ffffff";
+		
 		this.addChild(gameover_label);
+		this.addChild(tweet_button);
 		this.addEventListener('enterframe', function(){
 			if(game.input.a){
 				var stage = new Stage();
@@ -512,8 +571,8 @@ var XmlManager = enchant.Class.create({
 		this.getPreset = function(property_name, preset_name){
 			var preset = null;
 			presets.every(function(set){
-				if(set.property_name == property_name && set.preset_name == preset_name){
-					preset = set.content;
+				if(set.property_name == property_name && set.preset_name.search(preset_name) != -1){
+					preset = set;
 					return false;
 				}
 				
@@ -556,22 +615,31 @@ var XmlManager = enchant.Class.create({
 		return val;
 	},
 	
-	interpretColor : function(color){
-		if(color.search(/^\[.*\]$/) != -1){
-			return this.getPreset("color", color.replace(/^\[(.+)\]$/, "$1"));
-		}else if(color[0] == '#' || color.search(/^rgb/) != -1){
-			return color;
-		}else{
-			return ColorTable[PieceTypes[color]];
-		}
+	interpretColor : function(color, effect_name){
+		return (color == undefined) ? ColorTable[PieceTypes[effect_name.replace("effect", "").toUpperCase()]] :
+			(color.search(/^\[.*\]$/) != -1) ?  this.getPreset("color", color.replace(/^\[(.+)\]$/, "$1")).content :
+			(color[0] == '#' || color.search(/^rgb/) != -1) ? color : ColorTable[PieceTypes[color]];
 	},
 	
 	interpretSoundBufferNum : function(buffer_num){
-		if(typeof(buffer_num) == "Number"){
-			return buffer_num;
-		}else{
-			return sound_manager.sound_types[buffer_num];
-		}
+		return (typeof(buffer_num) == "Number") ? buffer_num : sound_manager.sound_types[buffer_num];
+	},
+	
+	interpretImageFrame : function(piece_type, frame_name){
+		if(frame_name.search(/^\d+/) != -1){return frame_name;}
+		var preset = this.getPreset("image", piece_type), result = -1;
+		var frame_names = preset.preset_name.split(/\s*:\s*/)[1].split(/\s*,\s*/);
+		var frame_nums = preset.content.split(/\s*,\s*/);
+		frame_names.every(function(name, cur_index){
+			if(name == frame_name){
+				result = frame_nums[cur_index];
+				return false;
+			}
+			
+			return true;
+		});
+		
+		return result;
 	},
 	
 	interpret : function(definition, pieces, average_coords, infos){
@@ -582,8 +650,8 @@ var XmlManager = enchant.Class.create({
 			switch(type){
 			case "Label":
 				var position = {"x" : (infos != undefined) ? infos.x : 0, "y" : 0};
-				var font = (definition.font.search(/^\[.+\]$/) != -1) ? this.getPreset("font", definition.font.replace(/^\[(.+)\]$/, "$1")) : 
-					definition.font;
+				var font = (definition.font.search(/^\[.+\]$/) != -1) ? 
+						this.getPreset("font", definition.font.replace(/^\[(.+)\]$/, "$1")).content : definition.font;
 				setRulerStyle(" font: " + font);
 				if(infos != undefined){definition.text = definition.text.fitInWidth(infos.width);}
 				var size = definition.text.getExpansion();
@@ -591,12 +659,14 @@ var XmlManager = enchant.Class.create({
 				position.y = this.interpretY(definition.y, size.height, average_coords.y);
 				
 				last_label = this.createNewLabel(font, position.x, position.y, size.width, definition.text
-						, definition.background_color, this.interpretColor(definition.color));
+						, definition.background_color, this.interpretColor(definition.color, definition.name));
 				label_manager.add(last_label, game.frame + definition.start_time, game.frame + definition.end_time);
 				break;
 				
 			case "PieceFrameEffect":
-				results.push(new PieceFrameEffect(pieces, definition.frame, game.frame + definition.start_time));
+				var frame = this.interpretImageFrame(definition.name.replace("effect", "").toUpperCase()
+						, definition.frame.replace(/^\[(.+)\]$/, "$1"));
+				results.push(new PieceFrameEffect(pieces, frame, game.frame + definition.start_time));
 				break;
 				
 			case "SoundEffect":
@@ -787,7 +857,7 @@ var TimeIndependentVibrationEffect = enchant.Class.create(Effect, {
 	},
 	
 	update : function(){
-		var diff_x = Math.round(Math.random() * this.max_rate), diff_y = Math.round(Math.random() * this.max_rate);
+		var diff_x = mersenne.nextInt(this.max_rate), diff_y = mersenne.nextInt(this.max_rate);
 		this.target.x += (this.target.x >= this.average_val.x) ? -diff_x : diff_x;
 		this.target.y += (this.target.y >= this.average_val.y) ? -diff_y : diff_y;
 	}
@@ -847,7 +917,7 @@ var PiecesEffect = enchant.Class.create(Effect, {
 		
 		effects = effects.concat(xml_manager.getDefinitions(getPropertyName(PieceTypes, pieces[0].type)
 				, getPropertyName(PieceTypes, (targets != undefined) ? targets[0].type : undefined)));
-		var selected_effect_num = Math.floor(Math.random() * xml_manager.getMaxNum(getPropertyName(PieceTypes, pieces[0].type)
+		var selected_effect_num = mersenne.nextInt(xml_manager.getMaxNum(getPropertyName(PieceTypes, pieces[0].type)
 				, getPropertyName(PieceTypes, (targets != undefined) ? targets[0].type : undefined)));
 		var selected_effects = effects.mapWithArray(function(definition, cur_index){
 			return (definition.num != selected_effect_num && definition.num != -1) ? new Array() : 
@@ -1077,7 +1147,7 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		this.cur_falling_pieces.pieces.forEach(function(piece, index, array){
 			if(!piece.tryToMove(0, 1)){	//自分の下1ますが空いているかどうか確かめる
 				if(piece.position.y <= 2){		//上から数えて3段目までピースがたまってしまっていたら、ゲームオーバー
-					var gameover_scene = new GameOverScene((this.x + this.width) / 2, (this.y + this.height) / 2);
+					var gameover_scene = new GameOverScene((this.x + this.width) / 2, (this.y + this.height) / 2, this.score_label.getScore());
 					game.pushScene(gameover_scene);
 					return;
 				}
@@ -1276,7 +1346,7 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 			var result = true;
 			
 			piece_info.neighbors.every(function(neighbor){
-				if(neighbor == null){return;}
+				if(neighbor == null){return true;}
 				var index0 = couples_array.indexOf(neighbor);	//pieceの周りにカップリングを探しているピースがいないか調べる
 				if(index0 != -1 && couple_indices[i] != couple_indices[index0] 	//同じグループに存在しておらず、グループのピース数が同じ
 				&& candidates[couple_indices[i]].length == candidates[couple_indices[index0]].length){
@@ -1350,11 +1420,11 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 	 * 次に出現するピースを設定する
 	 */
 	setNextAppearingPieces : function(){
-		var shape_type = Math.floor(Math.random() * this.shapes.shapes.length);
+		var shape_type = mersenne.nextInt(this.shapes.shapes.length);
 		this.next_appearing_pieces.pieces = this.shapes.shapes[shape_type].map(function(piece, cur_index){
 			var return_piece = null;
 			if(piece != null){
-				return_piece = this.createNewPiece(Math.floor(Math.random() * PieceTypes.MAX));
+				return_piece = this.createNewPiece(mersenne.nextInt(PieceTypes.MAX));
 				return_piece.position.x = 5 + (cur_index % 4);
 				return_piece.position.y = Math.floor(cur_index / 4);
 				return_piece.position_in_shape.x = cur_index % 4;
@@ -1490,6 +1560,8 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 var Stage = enchant.Class.create(enchant.Scene, {
 	initialize : function(){
 		enchant.Scene.call(this);
+		
+		mersenne = new MersenneTwister();		//乱数生成器の初期化
 		
 		var panel = new Panel(32 * NUM_HORIZONTAL_BLOCKS, 32 * NUM_VERTICAL_BLOCKS, game.width * 1 / 3, 80);
 		panel.setNextAppearingPieces();
