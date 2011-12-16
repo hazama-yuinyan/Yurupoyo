@@ -1,6 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 
+
+<!-- 
+	This section explains how the file can be written.
+	presets:<property_name name="preset_name or preset_names separated by comma">content or contents separated by comma</property_name>
+	Notes:"property_name" can be "font", "color" or "image". And you can define several "preset_name"s and "content"s only for "image" property.
+	You must keep "preset_names" and "contents" balanced.
+	
+	Content:<Effect(piece_type_name) property_name="property_value"...>some text</Effect(piece_type_name)>
+		     <set num="some number">[some Effect definitions]</set>
+	Property names list:{num, with, type, font(for "Label"), x(for "Label"), y(for "Label"), start_time
+	, end_time(except for "PieceFrameEffect" and "SoundEffect"), rate(for "FadeInEffect", "FadeOutEffect" and "TimeIndependentVibrationEffect")
+	, amplitude_x(for "TimeIndependentVibrationEffect"), amplitude_y(for "TimeIndependentVibrationEffect")
+	, background_color(for "Label")[optional]{If omitted, the default value "#ffffff" is applied}
+	, color(for "Label")[optional]{If omitted, color is automatically set to the color of the piece type
+	that the tag has a focus on}
+	Property explanation: num; The pattern number. You can define as many effects as you want for each type of pieces.
+	with; This property enables the effect only when a coupling with this type happens.
+	type; Effect type. Currently, "Label", "Piece(s)", "FadeInEffect", "FadeOutEffect", "TimeIndependentVibrationEffect" and "SoundEffect" are available.
+	And the "+" sign enables you to define several effects in a tag.
+	font; The font style. It can be written in the same way as CSS's font property.
+	x; The x coordinates.
+	y; The y coordinates.
+	start_time; The time at which the effect happens or start affecting. The value represents the frame counts after the effect is added to EffectManager.
+	end_time; The time at which the effect ends or end affecting. The value also represents the frame counts after the effect is added to EffectManager.
+	rate; The rate at which an object fades in or out at one time. The value over 1 or less than 0 is meaningless.
+	amplitude_x; The amplitude of x. Which means the object will vibrate between (current x coordinates - amplitude_x) and (current x coordinates + amplitude_x).
+	amplitude_y; The amplitude of y. Which means the object will vibrate between (current y coordinates - amplitude_y) and (current y coordinates + amplitude_y).
+	background_color; The background color. 
+	color; The color of the text. You can write in either ways below.
+	"#xxxxxx"(where x is a hexadecimal digit), "rgb(x, y, z)"(where 0 <= x, y, z < 256), "[preset_name defined in presets/color section]".
+	Notes: The text field is only available in "Label".
+ -->
+
+
 <Effects>
 	<presets>
 		<font name="default_font">large 'うずらフォント', 'MS ゴシック'</font>
@@ -8,14 +42,16 @@
 		<font name="font_very_large">xx-large 'うずらフォント', 'MS ゴシック'</font>
 		<font name="font_bold">bold large 'うずらフォント', 'MS ゴシック'</font>
 		<color name="black">rgb(0, 0, 0)</color>
-		<image name="AKARI : transparent, surprised, confused, astonished">4, 5, 6, 7</image>
+		<image name="AKARI : transparent, confused, crying, shocked, forced smile, blank">4, 5, 6, 7, 8, 9</image>
+		<image name="CHINATSU : happy, enchanted, shocked, angry, disgusted, tricking">4, 5, 6, 7, 8, 9</image>
+		<image name="YUI : angry, confused, bitter smile, shocked">4, 5, 6, 7</image>
+		<image name="KYOKO : charming, scared">4, 5</image>
 	</presets>
 	
 	<set num="0">
 		<EffectAkari type="Label + FadeInEffect" font="[default_font]" x="average" y="average" end_time="30" rate="0.1">＼ｱｯｶﾘ~ﾝ／</EffectAkari>
 		<EffectAkari type="Pieces + FadeOutEffect" rate="0.05" end_time="20"></EffectAkari>
-		<EffectAkari type="PieceFrameEffect" frame="[transparent]" start_time="0"></EffectAkari>
-		<EffectAkari type="SoundEffect" buffer_num="AKKARIN" start_time="0"></EffectAkari>
+		<EffectAkari type="PieceFrameEffect + SoundEffect" frame="[transparent]" buffer_num="AKKARIN" start_time="0"></EffectAkari>
 	</set>
 	<EffectAyano num="0" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">最後までやらなきゃ罰金バッキンガムよ！</EffectAyano>
 	<EffectChinatsu num="0" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">今日はチーナ、みんなのためにがんばっちゃいま～す！</EffectChinatsu>
@@ -35,10 +71,10 @@
 	</set>
 	
 	<set num="0">
-		<EffectChinatsu with="yui" type="Label" font="[font_large]" x="average with margin" y="average with margin" end_time="20">きゃ～結衣せんぱぁ～い！</EffectChinatsu>
-		<EffectChinatsu with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="35">結衣先輩と一緒に消えれるなんてこの上ない幸せですぅ～！</EffectChinatsu>
-		<EffectChinatsu with="yui" type="Label" font="[font_large]" x="average with margin" y="average with margin" strat_time="35" end_time="50">このまま天からお迎えが来ちゃってもいいかも・・・</EffectChinatsu>
-		<EffectYui with="chinatsu" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="35" end_time="50">いや、それは私が困るから・・・</EffectYui>
+		<EffectChinatsu with="yui" type="Label + PieceFrameEffect" font="[font_large]" x="average with margin" y="average with margin" frame="[happy]" end_time="20">きゃ～結衣せんぱぁ～い！</EffectChinatsu>
+		<EffectChinatsu with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">結衣先輩と一緒に消えれるなんてこの上ない幸せですぅ～！</EffectChinatsu>
+		<EffectChinatsu with="yui" type="Label + PieceFrameEffect + SoundEffect" font="[font_large]" x="average with margin" y="average with margin" frame="[enchanted]" buffer_num="VERY_SHINING" strat_time="40" end_time="60">このまま天からお迎えが来ちゃってもいいかも・・・</EffectChinatsu>
+		<EffectYui with="chinatsu" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="40" end_time="60">いや、それは私が困るから・・・</EffectYui>
 	</set>
 	
 	<set num="0">
@@ -59,13 +95,22 @@
 		<EffectYui with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">なんだよ、改まっちゃって。京子らしくないな</EffectYui>
 		<EffectKyoko with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">いや～、ずいぶん寒くなったなと思って</EffectKyoko>
 		<EffectYui with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">そりゃあ、冬だからな</EffectYui>
-		<EffectKyoko with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="40" end_time="60">みんな、手うがしようね！</EffectKyoko>
+		<EffectKyoko with="yui" type="Label + PieceFrameEffect + SoundEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[charming]" buffer_num="SHINING" start_time="40" end_time="60">みんな、手うがしようね！</EffectKyoko>
 		<EffectYui with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="40" end_time="60">それが言いたいだけかよ！</EffectYui>
 	</set>
 	
+	<set num="3" enable_if="piece1.y = height / 3">
+		<EffectKyoko with="yui" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[scared]" end_time="20">わ〜ん、結衣〜、高いとこ怖いよ〜</EffectKyoko>
+		<EffectYui with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">え？お前ってそんなキャラだったっけ・・？</EffectYui>
+		<EffectKyoko with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">わ〜ん、結衣ひどいよぉ〜。あたしだってか弱い女の子なんだよ？</EffectKyoko>
+		<EffectYui with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">（これってまさか・・昔の京子に戻ってしまったんじゃ・・・）</EffectYui>
+		<EffectKyoko with="yui" type="Label + PieceFrameEffect + SoundEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[charming]" start_time="60" end_time="80">うっそぴょ〜ん♪</EffectKyoko>
+		<EffectYui with="kyoko" type="Label + PieceFrameEffect" font="[font_very_large]" x="average with margin" y="average with margin" frame="[angry]" start_time="70" end_time="90">私の心配を返せ！</EffectYui>
+	</set>
+	
 	<set num="0">
-		<EffectAyano with="kyoko" type="Label" font="[font_large]" x="average with margin" y="average with margin" end_time="10">としのーきょーこー！</EffectAyano>
-		<EffectKyoko with="ayano" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="5" end_time="15">なぁに～、あやの～</EffectKyoko>
+		<EffectAyano with="kyoko" type="Label" font="[font_large]" x="average with margin" y="average with margin" end_time="20">としのーきょーこー！</EffectAyano>
+		<EffectKyoko with="ayano" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="5" end_time="20">なぁに～、あやの～</EffectKyoko>
 	</set>
 	
 	<set num="0">
