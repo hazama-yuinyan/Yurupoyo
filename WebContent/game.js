@@ -131,11 +131,11 @@ String.prototype.fitInWidth = function(max_width){
 	if(this.length == 0){return "";}
 	if(this.getExpansion().width <= max_width){return this;}
 	var first, last, result = "";
-	for(first = 0; first < this.length - 1; first = last){
-		for(last = this.length - 1; last >= first; --last){
+	for(first = 0; first < this.length; first = last){
+		for(last = this.length; last >= first; --last){
 			var s = this.slice(first, last);
 			if(s.getExpansion().width <= max_width){
-				s += "<br>";
+				if(last != this.length){s += "<br>";}			//文字列の最後には<br>を追加しない
 				result = result.concat(s);
 				break;
 			}
@@ -515,7 +515,7 @@ var XmlManager = enchant.Class.create({
 					if(child.nextElementSibling == null || child.nextElementSibling.getAttribute("num") == 0){
 						max_nums.push({"key" : (obj['with'] != undefined) ? obj.name + " with " + obj['with'] : obj.name, "num" : num});
 						if(obj['with'] != undefined){
-							max_nums.push({"key" : "effect" + obj['with'] + " with " + obj.name.replace("effect", ""), "num" : num});
+							max_nums.push({"key" : obj['with'] + " with " + obj.name, "num" : num});
 						}
 					}
 				}else{
@@ -535,7 +535,7 @@ var XmlManager = enchant.Class.create({
 		http_obj.send(null);
 		
 		this.getDefinitions = function(tag_name, target){
-			var name = "effect" + tag_name;
+			var name = tag_name;
 			if(target != undefined){
 				var results = effects_definitions.filter(function(definition){
 					return(definition.name == name && definition['with'] == target);
@@ -555,7 +555,7 @@ var XmlManager = enchant.Class.create({
 		};
 		
 		this.getMaxNum = function(effect_name, target){
-			var searching_str = (target != undefined) ? "effect" + effect_name + " with " + target : "effect" + effect_name;
+			var searching_str = (target != undefined) ? effect_name + " with " + target : effect_name;
 			var result = -1;
 			max_nums.every(function(obj){
 				if(obj.key == searching_str){
@@ -617,7 +617,7 @@ var XmlManager = enchant.Class.create({
 	},
 	
 	interpretColor : function(color, effect_name){
-		return (color == undefined) ? ColorTable[PieceTypes[effect_name.replace("effect", "").toUpperCase()]] :
+		return (color == undefined) ? ColorTable[PieceTypes[effect_name.toUpperCase()]] :
 			(color.search(/^\[.*\]$/) != -1) ?  this.getPreset("color", color.replace(/^\[(.+)\]$/, "$1")).content :
 			(color[0] == '#' || color.search(/^rgb/) != -1) ? color : ColorTable[PieceTypes[color]];
 	},
@@ -654,19 +654,19 @@ var XmlManager = enchant.Class.create({
 				var font = (definition.font.search(/^\[.+\]$/) != -1) ? 
 						this.getPreset("font", definition.font.replace(/^\[(.+)\]$/, "$1")).content : definition.font;
 				setRulerStyle(" font: " + font);
-				if(infos != undefined){definition.text = definition.text.fitInWidth(infos.width);}
-				var size = definition.text.getExpansion();
+				var text = definition.text.slice(0);
+				if(infos != undefined){text = text.fitInWidth(infos.width);}
+				var size = text.getExpansion();
 				position.x = (infos != undefined) ? infos.x : this.interpretX(definition.x, size.width, average_coords.x);
 				position.y = this.interpretY(definition.y, size.height, average_coords.y);
 				
-				last_label = this.createNewLabel(font, position.x, position.y, size.width, definition.text
+				last_label = this.createNewLabel(font, position.x, position.y, (infos != undefined) ? infos.width : size.width, text
 						, definition.background_color, this.interpretColor(definition.color, definition.name));
 				label_manager.add(last_label, game.frame + definition.start_time, game.frame + definition.end_time);
 				break;
 				
 			case "PieceFrameEffect":
-				var frame = this.interpretImageFrame(definition.name.replace("effect", "").toUpperCase()
-						, definition.frame.replace(/^\[(.+)\]$/, "$1"));
+				var frame = this.interpretImageFrame(definition.name.toUpperCase(), definition.frame.replace(/^\[(.+)\]$/, "$1"));
 				results.push(new PieceFrameEffect(pieces, frame, game.frame + definition.start_time));
 				break;
 				
