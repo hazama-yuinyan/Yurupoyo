@@ -16,6 +16,7 @@
 	, background_color(for "Label")[optional]{If omitted, the default value "#ffffff" is applied}
 	, color(for "Label")[optional]{If omitted, color is automatically set to the color of the piece type
 	that the tag has a focus on}
+	}
 	Property explanation: num; The pattern number. You can define as many effects as you want for each type of pieces.
 	with; This property enables the effect only when a coupling with this type happens.
 	type; Effect type. Currently, "Label", "Piece(s)", "FadeInEffect", "FadeOutEffect", "TimeIndependentVibrationEffect" and "SoundEffect" are available.
@@ -29,7 +30,7 @@
 	amplitude_x; The amplitude of x. Which means the object will vibrate between (current x coordinates - amplitude_x) and (current x coordinates + amplitude_x).
 	amplitude_y; The amplitude of y. Which means the object will vibrate between (current y coordinates - amplitude_y) and (current y coordinates + amplitude_y).
 	background_color; The background color. 
-	color; The color of the text. You can write in either ways below.
+	color; The color of the text. You can write it in either ways below.
 	"#xxxxxx"(where x is a hexadecimal digit), "rgb(x, y, z)"(where 0 <= x, y, z < 256), "[preset_name defined in presets/color section]".
 	Notes: The text field is only available in "Label".
  -->
@@ -42,10 +43,14 @@
 		<font name="font_very_large">xx-large 'うずらフォント', 'MS ゴシック'</font>
 		<font name="font_bold">bold large 'うずらフォント', 'MS ゴシック'</font>
 		<color name="black">rgb(0, 0, 0)</color>
-		<image name="AKARI : transparent, confused, crying, shocked, forced smile, blank">4, 5, 6, 7, 8, 9</image>
-		<image name="CHINATSU : happy, enchanted, shocked, angry, disgusted, tricking">4, 5, 6, 7, 8, 9</image>
+		<image name="AKARI : transparent, confused, crying, shocked, forced smile, blank, panicked, smiling">4, 5, 6, 7, 8, 9, 10, 11</image>
+		<image name="CHINATSU : happy, enchanted, shocked, angry, disgusted, tricking, refusing">4, 5, 6, 7, 8, 9, 10</image>
 		<image name="YUI : angry, confused, bitter smile, shocked">4, 5, 6, 7</image>
-		<image name="KYOKO : charming, scared">4, 5</image>
+		<image name="KYOKO : charming, scared, smiling, astonished, timid, wanting to kiss">4, 5, 6, 7, 8, 9</image>
+		<image name="AYANO : embarrassed, angry, relaxed, flinched">4, 5, 6, 7</image>
+		<image name="CHITOSE : gone, smiling">4, 5</image>
+		<image name="HIMAWARI : angry, disgusted, doubting">4, 5, 6</image>
+		<image name="SAKURAKO : angry, timid, excited">4, 5, 6</image>
 	</presets>
 	
 	<set num="0">
@@ -63,6 +68,7 @@
 	<EffectYui num="0" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">・・本当に私でよかったの？</EffectYui>
 	<EffectYui num="1" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">えっと・・先に帰るね？</EffectYui>
 
+	<!-- ちなつとあかり -->
 	<set num="0">
 		<EffectAkari with="chinatsu" type="Label + FadeInEffect" font="[default_font]" x="average with margin" y="average with margin" end_time="20" rate="0.1">＼ｱｯｶ・・・</EffectAkari>
 		<EffectChinatsu with="akari" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="15">あかりちゃ～ん</EffectChinatsu>
@@ -70,13 +76,15 @@
 		<EffectAkari with="chinatsu" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">えええええ！？</EffectAkari>
 	</set>
 	
+	<!-- 結衣とちなつ -->
 	<set num="0">
 		<EffectChinatsu with="yui" type="Label + PieceFrameEffect" font="[font_large]" x="average with margin" y="average with margin" frame="[happy]" end_time="20">きゃ～結衣せんぱぁ～い！</EffectChinatsu>
 		<EffectChinatsu with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">結衣先輩と一緒に消えれるなんてこの上ない幸せですぅ～！</EffectChinatsu>
 		<EffectChinatsu with="yui" type="Label + PieceFrameEffect + SoundEffect" font="[font_large]" x="average with margin" y="average with margin" frame="[enchanted]" buffer_num="VERY_SHINING" strat_time="40" end_time="60">このまま天からお迎えが来ちゃってもいいかも・・・</EffectChinatsu>
-		<EffectYui with="chinatsu" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="40" end_time="60">いや、それは私が困るから・・・</EffectYui>
+		<EffectYui with="chinatsu" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[bitter smile]" start_time="40" end_time="60">いや、それは私が困るから・・・</EffectYui>
 	</set>
 	
+	<!-- 結衣と京子 -->
 	<set num="0">
 		<EffectKyoko with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">どうも～、キョッピー＆ユッピーで～す！ＣＭのあと・・・</EffectKyoko>
 		<EffectKyoko with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="25" end_time="45">もしかしたら何かネタやるかも！</EffectKyoko>
@@ -99,7 +107,7 @@
 		<EffectYui with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="40" end_time="60">それが言いたいだけかよ！</EffectYui>
 	</set>
 	
-	<set num="3" enable_if="piece1.y = height / 3">
+	<set num="3" <!--  enable_if="piece1.y = height / 3"-->>
 		<EffectKyoko with="yui" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[scared]" end_time="20">わ〜ん、結衣〜、高いとこ怖いよ〜</EffectKyoko>
 		<EffectYui with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">え？お前ってそんなキャラだったっけ・・？</EffectYui>
 		<EffectKyoko with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">わ〜ん、結衣ひどいよぉ〜。あたしだってか弱い女の子なんだよ？</EffectKyoko>
@@ -108,16 +116,30 @@
 		<EffectYui with="kyoko" type="Label + PieceFrameEffect" font="[font_very_large]" x="average with margin" y="average with margin" frame="[angry]" start_time="70" end_time="90">私の心配を返せ！</EffectYui>
 	</set>
 	
+	<!-- 京子と綾乃 -->
 	<set num="0">
 		<EffectAyano with="kyoko" type="Label" font="[font_large]" x="average with margin" y="average with margin" end_time="20">としのーきょーこー！</EffectAyano>
 		<EffectKyoko with="ayano" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="5" end_time="20">なぁに～、あやの～</EffectKyoko>
 	</set>
 	
+	<!-- 結衣とあかり -->
 	<set num="0">
 		<EffectAkari with="yui" type="Label + FadeOutEffect" font="[default_font]" x="average with margin" y="average with margin" end_time="20" rate="0.05">＼ｱｯｶﾘ~ﾝ／</EffectAkari>
 		<EffectAkari with="yui" type="Piece + FadeOutEffect" rate="0.05" end_time="20"></EffectAkari>
-		<EffectAkari with="yui" type="PieceFrameEffect" frame="transparent" start_time="0"></EffectAkari>
+		<EffectAkari with="yui" type="PieceFrameEffect" frame="[transparent]" start_time="0"></EffectAkari>
 		<EffectYui with="akari" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">あかり～！</EffectYui>
 		<EffectYui with="akari" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="30" end_time="40">ホント不憫な子・・・</EffectYui>
+	</set>
+	
+	<!-- 向日葵と櫻子 -->
+	<set num="0">
+		<EffectHimawari with="sakurako" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20"></EffectHimawari>
+		<EffectSakurako with="himawari" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20"></EffectSakurako>
+	</set>
+	
+	<!-- 千歳と綾乃 -->
+	<set num="0">
+		<EffectAyano with="chitose" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20"></EffectAyano>
+		<EffectChitose with="ayano" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20"></EffectChitose>
 	</set>
 </Effects>
