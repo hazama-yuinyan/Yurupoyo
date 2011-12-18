@@ -4,7 +4,7 @@
  * game.js
  *
  * Copyright (c) Ryouta Ozaki
- * Dual licensed under the MIT or GPL Version 3 licenses
+ * Licensed under the GPL Version 3 licenses
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -208,7 +208,7 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 		gameover_label.color = "#ff1512";
 		
 		var tweet_button = new enchant.Label("");
-		tweet_button.text = '<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://bit.ly/vWf7Oz" '
+		tweet_button.text = '<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://bit.ly/rLW8tO" '
 			+ 'data-counturl="http://filesforbots.me.land.to/games/Yurupoyo/index.html" data-via="hazama_akkarin" '
 			+ 'data-hashtags="yuruyuri, games" data-text="ゆるぽよで' + score + '点の記録を残したよ！" data-lang="ja">Tweet</a>';
 		tweet_button.x = x;
@@ -511,7 +511,7 @@ var ExpressionEvaluator = enchant.Class.create({
 });
 
 var XmlManager = enchant.Class.create({
-	initialize : function(url){
+	initialize : function(url, panel_height){
 		var http_obj = new XMLHttpRequest();
 		var effects_definitions = new Array();
 		var presets = new Array();
@@ -520,6 +520,7 @@ var XmlManager = enchant.Class.create({
 		this.now = new Date();
 		this.pieces = null;
 		this.targets = null;
+		this.panel_height = panel_height;
 		
 		http_obj.onload = function(){
 			var squeezeValues = function(elem){
@@ -650,7 +651,8 @@ var XmlManager = enchant.Class.create({
 		if(val == "average"){
 			return Math.floor(this.average_coords.y);
 		}else if(val == "average with margin"){
-			return (this.average_coords.y + height > game.height) ? game.height - height : this.average_coords.y;
+			return (this.average_coords.y + height > game.height) ? game.height - height : 
+				(this.average_coords.y >= this.panel_height / 2) ? this.average_coords.y - height : this.average_coords.y + height;
 		}
 		
 		return val;
@@ -1136,8 +1138,6 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 			}, this);
 			
 			if(rotated_pieces.every(function(piece){
-				console.log("["+game.frame+"]");
-				console.log(piece.logPosition());
 				return (piece.tryToMove(0, 0) && piece.tryToMove(0, 1));
 			})){
 				cur_falling_pieces.pieces.forEach(function(piece){
@@ -1662,6 +1662,7 @@ var Stage = enchant.Class.create(enchant.Scene, {
 		
 		var panel = new Panel(32 * NUM_HORIZONTAL_BLOCKS, 32 * NUM_VERTICAL_BLOCKS, game.width * 1 / 3, 80);
 		panel.setNextAppearingPieces();
+		xml_manager = new XmlManager("Effects.xml", panel.height);	//XmlManagerの初期化
 		var panel_background = new enchant.Surface(panel.width, panel.height);
 		var ctx = panel_background.context;
 		ctx.fillStyle = "#ebebeb";
@@ -1773,7 +1774,6 @@ window.onload = function(){
 	game.is_debug = true;
 	game.onload = function(){
 		sound_manager = new SoundManager();
-		xml_manager = new XmlManager("Effects.xml");
 		label_manager = new LabelManager();
 		var stage = new Stage();
 		game.pushScene(stage);

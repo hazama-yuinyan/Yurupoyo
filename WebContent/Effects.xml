@@ -79,9 +79,9 @@
 	
 	<!-- 結衣とちなつ -->
 	<set num="0">
-		<Chinatsu with="yui" type="Label + PieceFrameEffect" font="[font_large]" x="average with margin" y="average with margin" frame="[happy]" end_time="20">きゃ～結衣せんぱぁ～い！</Chinatsu>
+		<Chinatsu with="yui" type="Label + PieceFrameEffect" font="[font_large]" x="average with margin" y="average with margin" frame="[happy]" start_time="0" end_time="20">きゃ～結衣せんぱぁ～い！</Chinatsu>
 		<Chinatsu with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">結衣先輩と一緒に消えれるなんてこの上ない幸せですぅ～！</Chinatsu>
-		<Chinatsu with="yui" type="Label + PieceFrameEffect + SoundEffect" font="[font_large]" x="average with margin" y="average with margin" frame="[enchanted]" buffer_num="VERY_SHINING" strat_time="40" end_time="60">このまま天からお迎えが来ちゃってもいいかも・・・</Chinatsu>
+		<Chinatsu with="yui" type="Label + PieceFrameEffect + SoundEffect" font="[font_large]" x="average with margin" y="average with margin" frame="[enchanted]" buffer_num="VERY_SHINING" start_time="40" end_time="60">もう私、このまま天からお迎えが来ちゃってもいいかも・・・</Chinatsu>
 		<Yui with="chinatsu" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[bitter smile]" start_time="40" end_time="60">いや、それは私が困るから・・・</Yui>
 	</set>
 	
@@ -109,7 +109,7 @@
 	</set>
 	
 	<set num="3" ><!--  enable_if="piece1.y = height / 3"-->
-		<Kyoko with="yui" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[scared]" end_time="20">わ〜ん、結衣〜、高いとこ怖いよ〜</Kyoko>
+		<Kyoko with="yui" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[scared]" start_time="0" end_time="20">わ〜ん、結衣〜、高いとこ怖いよ〜</Kyoko>
 		<Yui with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">え？お前ってそんなキャラだったっけ・・？</Yui>
 		<Kyoko with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">わ〜ん、結衣ひどいよぉ〜。あたしだってか弱い女の子なんだよ？</Kyoko>
 		<Yui with="kyoko" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[confused]" start_time="20" end_time="40">（これってまさか・・昔の京子に戻ってしまったんじゃ・・・）</Yui>
