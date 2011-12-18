@@ -170,7 +170,7 @@ Array.prototype.mapWithArray = function(fun/*, thisp*/){
 	var len = this.length;
 	if(typeof fun != "function"){throw new TypeError();}
 	
-	var result = new Array(len);
+	var result = new Array();
 	var this_p = arguments[1];
 	for(var i = 0; i < len; ++i){
 		if(i in this){result = result.concat(fun.call(this_p, this[i], i, this));}
@@ -477,22 +477,60 @@ var Piece = enchant.Class.create(enchant.Sprite, {
 	}
 });
 
+var ExpressionEvaluator = enchant.Class.create({
+	initialize : function(val1, val2){
+		this.value1 = val1;
+		this.value2 = val2;
+	},
+	
+	execute : function(operator_type){
+		switch(operator_type){
+		case 0:
+			return(this.value1 == this.value2);
+			break;
+			
+		case 1:
+			return(this.value1 < this.value2);
+			break;
+			
+		case 2:
+			return(this.value1 > this.value2);
+			break;
+			
+		case 3:
+			return(this.value1 <= this.value2);
+			break;
+			
+		case 4:
+			return(this.value1 >= this.value2);
+			break;
+		}
+		
+		return false;
+	}
+});
+
 var XmlManager = enchant.Class.create({
 	initialize : function(url){
 		var http_obj = new XMLHttpRequest();
 		var effects_definitions = new Array();
 		var presets = new Array();
 		var max_nums = new Array();
+		this.average_coords = 0;
+		this.now = new Date();
+		this.pieces = null;
+		this.targets = null;
+		
 		http_obj.onload = function(){
 			var squeezeValues = function(elem){
 				var obj = {};
 				for(var attrs = elem.attributes, i = 0; i < attrs.length; ++i){
-					obj[attrs[i].name] = (attrs[i].value.search(/^\d+/) != -1) ? parseFloat(attrs[i].value) : attrs[i].value;	//数値だけのものはNumber型にする
+					obj[attrs[i].name] = (attrs[i].value.search(/^\d+\.?\d*$/) != -1) ? parseFloat(attrs[i].value) : attrs[i].value;	//数値だけのものはNumber型にする
 				}
 				
 				return obj;
 			};
-			var xml = http_obj.responseXML, doc = xml.documentElement, num;
+			var xml = http_obj.responseXML, doc = xml.documentElement, num, enable_if;
 			var preset_elem = doc.getElementsByTagName("presets")[0];
 			
 			for(var preset_child = preset_elem.firstElementChild; preset_child != null; preset_child = preset_child.nextElementSibling){
@@ -505,11 +543,13 @@ var XmlManager = enchant.Class.create({
 				if(child.childElementCount != 0){
 					var obj = {};
 					num = parseInt(child.getAttribute("num"));
+					enable_if = (child.hasAttribute("enable_if")) ? child.getAttribute("enable_if") : undefined;
 					for(var w_child = child.firstElementChild; w_child != null; w_child = w_child.nextElementSibling){
 						obj = squeezeValues(w_child);
 						obj['num'] = num;
 						obj['text'] = w_child.textContent;
 						obj['name'] = w_child.tagName.toLowerCase();
+						if(enable_if != undefined && obj['enable_if'] == undefined){obj['enable_if'] = enable_if;}
 						effects_definitions.push(obj);
 					}
 					if(child.nextElementSibling == null || child.nextElementSibling.getAttribute("num") == 0){
@@ -596,21 +636,21 @@ var XmlManager = enchant.Class.create({
 		return label;
 	},
 	
-	interpretX : function(val, width, average){
+	interpretX : function(val, width){
 		if(val == "average"){
-			return Math.floor(average);
+			return Math.floor(this.average_coords.x);
 		}else if(val == "average with margin"){
-			return (average + width > game.width) ? game.width - width : average;
+			return (this.average_coords.x + width > game.width) ? game.width - width : this.average_coords.x;
 		}
 		
 		return val;
 	},
 	
-	interpretY : function(val, height, average){
+	interpretY : function(val, height){
 		if(val == "average"){
-			return Math.floor(average);
+			return Math.floor(this.average_coords.y);
 		}else if(val == "average with margin"){
-			return (average + height > game.height) ? game.height - height : average;
+			return (this.average_coords.y + height > game.height) ? game.height - height : this.average_coords.y;
 		}
 		
 		return val;
@@ -627,13 +667,13 @@ var XmlManager = enchant.Class.create({
 	},
 	
 	interpretImageFrame : function(piece_type, frame_name){
-		if(frame_name.search(/^\d+/) != -1){return frame_name;}
+		if(typeof(frame_name) == "Number"){return frame_name;}
 		var preset = this.getPreset("image", piece_type), result = -1;
 		var frame_names = preset.preset_name.split(/\s*:\s*/)[1].split(/\s*,\s*/);
 		var frame_nums = preset.content.split(/\s*,\s*/);
 		frame_names.every(function(name, cur_index){
 			if(name == frame_name){
-				result = frame_nums[cur_index];
+				result = parseInt(frame_nums[cur_index]);
 				return false;
 			}
 			
@@ -643,9 +683,31 @@ var XmlManager = enchant.Class.create({
 		return result;
 	},
 	
-	interpret : function(definition, pieces, average_coords, infos){
+	/*verifyAvailability : function(condition){
+		if(condition == undefined){return true;}
+		
+		var exprs = condition.split(/and|or (?!equal|less|more)/);
+		var variables = ["piece1.x", "piece1.y", "piece2.x", "piece2.y", "now."]
+		var operators = [/equal to/, /less than/, /more than/, /equal|less or less|equal/, /equal|more or more|equal/];
+		exprs.forEach(function(expr){
+			var operator_type = -1, operator_pos;
+			operators.every(function(operator, cur_index){
+				if(operator_pos = expr.search(operator) != -1){
+					operator_type = cur_index;
+					return false;
+				}
+				
+				return true;
+			});
+			
+			
+		});
+	},*/
+	
+	interpret : function(definition, infos){
 		var types = definition.type.split(/\s*\+\s*/);
 		var last_label = null, results = new Array();
+		//if(!this.verifyAvailability(definition.enable_if)){return results;}
 		
 		types.forEach(function(type){
 			switch(type){
@@ -657,17 +719,21 @@ var XmlManager = enchant.Class.create({
 				var text = definition.text.slice(0);
 				if(infos != undefined){text = text.fitInWidth(infos.width);}
 				var size = text.getExpansion();
-				position.x = (infos != undefined) ? infos.x : this.interpretX(definition.x, size.width, average_coords.x);
-				position.y = this.interpretY(definition.y, size.height, average_coords.y);
+				position.x = (infos != undefined) ? infos.x : this.interpretX(definition.x, size.width);
+				position.y = this.interpretY(definition.y, size.height);
 				
-				last_label = this.createNewLabel(font, position.x, position.y, (infos != undefined) ? infos.width : size.width, text
-						, definition.background_color, this.interpretColor(definition.color, definition.name));
+				last_label = this.createNewLabel(font, position.x, position.y, (infos != undefined && size.width >= infos.width) 
+						? infos.width : size.width, text, definition.background_color, this.interpretColor(definition.color, definition.name));
 				label_manager.add(last_label, game.frame + definition.start_time, game.frame + definition.end_time);
 				break;
 				
 			case "PieceFrameEffect":
 				var frame = this.interpretImageFrame(definition.name.toUpperCase(), definition.frame.replace(/^\[(.+)\]$/, "$1"));
-				results.push(new PieceFrameEffect(pieces, frame, game.frame + definition.start_time));
+				results.push(new PieceFrameEffect(this.pieces, frame, game.frame + definition.start_time));
+				break;
+				
+			case "OpacityChangeEffect":
+				results.push(new OpacityChangeEffect(this.pieces, definition.value, game.frame + definition.start_time));
 				break;
 				
 			case "SoundEffect":
@@ -675,12 +741,12 @@ var XmlManager = enchant.Class.create({
 				break;
 				
 			case "FadeInEffect":
-				results.push(new FadeInEffect((last_label != null) ? new Array(last_label) : pieces, game.frame + definition.start_time
+				results.push(new FadeInEffect((last_label != null) ? new Array(last_label) : this.pieces, game.frame + definition.start_time
 						, game.frame + definition.end_time, definition.rate));
 				break;
 				
 			case "FadeOutEffect":
-				results.push(new FadeOutEffect((last_label != null) ? new Array(last_label) : pieces, game.frame + definition.start_time
+				results.push(new FadeOutEffect((last_label != null) ? new Array(last_label) : this.pieces, game.frame + definition.start_time
 						, game.frame + definition.end_time, definition.rate));
 				break;
 				
@@ -892,6 +958,26 @@ var PieceFrameEffect = enchant.Class.create(Effect, {
 });
 
 /**
+ * オブジェクトの透明度を変更するエフェクト
+ */
+var OpacityChangeEffect = enchant.Class.create(Effect, {
+	initialize : function(pieces, value, time_to_start_affecting){
+		Effect.call(this, time_to_start_affecting + 1, time_to_start_affecting);
+		
+		this.targets = pieces;
+		this.value = value;
+	},
+	
+	update : function(){
+		if(this.start_time <= game.frame && game.frame <= this.end_time){
+			this.targets.forEach(function(piece){
+				piece.opacity = this.value;
+			}, this);
+		}
+	}
+});
+
+/**
  * 音を鳴らすエフェクト
  */
 var SoundEffect = enchant.Class.create(Effect, {
@@ -914,6 +1000,10 @@ var PiecesEffect = enchant.Class.create(Effect, {
 		
 		this.sub_effects = new Array();
 		
+		xml_manager.pieces = pieces;
+		xml_manager.targets = targets;
+		xml_manager.average_coords = average_coords;
+		
 		var effects = new Array();
 		effects.push({"type" : "Label", "font" : "large 'うずらフォント', 'MS ゴシック'", "x" : Math.floor(average_coords.x - 50),
 			"y" : Math.floor(average_coords.y - 20), "text" : "+" + score, "end_time" : 30, "background_color" : "#ffffff",
@@ -923,14 +1013,14 @@ var PiecesEffect = enchant.Class.create(Effect, {
 			"y" : Math.floor(average_coords.y - 40), "text" : num_successive_disappearance + "COMBO!", "end_time" : 30,
 			"background_color" : "#ffffff", "color" : ColorTable[num_successive_disappearance % PieceTypes.MAX], "num" : -1});
 		
-		effects = effects.concat(xml_manager.getDefinitions(getPropertyName(PieceTypes, pieces[0].type)
-				, getPropertyName(PieceTypes, (targets != undefined) ? targets[0].type : undefined)));
-		var selected_effect_num = mersenne.nextInt(xml_manager.getMaxNum(getPropertyName(PieceTypes, pieces[0].type)
-				, getPropertyName(PieceTypes, (targets != undefined) ? targets[0].type : undefined)));
+		var piece_type = getPropertyName(PieceTypes, pieces[0].type)
+		, target_type = getPropertyName(PieceTypes, (targets != undefined) ? targets[0].type : undefined);
+		effects = effects.concat(xml_manager.getDefinitions(piece_type, target_type));
+		var selected_effect_num = mersenne.nextInt(xml_manager.getMaxNum(piece_type, target_type));
 		var selected_effects = effects.mapWithArray(function(definition, cur_index){
 			return (definition.num != selected_effect_num && definition.num != -1) ? new Array() : 
-				   (section_x == undefined || cur_index < 2) ? xml_manager.interpret(definition, pieces, average_coords) : 
-					   xml_manager.interpret(definition, pieces, average_coords, {"x" : section_x, "width" : section_width});
+				   (section_x == undefined || cur_index < 2) ? xml_manager.interpret(definition) : 
+					   xml_manager.interpret(definition, {"x" : section_x, "width" : section_width});
 		});
 		
 		var end_time = 0;
@@ -1238,6 +1328,10 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 					(lhs.position.y < rhs.position.y) ? 1 : 0;
 			}).forEach(function(piece){		//動くピースリストに追加されたピースを着地させる
 				this.removePiece(piece);
+				piece.makeUnconnected();
+				if(piece.neighbors[0] != null){piece.neighbors[0].makeUnconnected();}
+				if(piece.neighbors[1] != null){piece.neighbors[1].makeUnconnected();}
+				this.effect_manager.removeEffect(piece);
 				if(game.is_debug){
 					console.log("the piece at"+piece.logPosition()+"which is a(n) \""+getPropertyName(PieceTypes, piece.type)
 							+"\" is moving to");
@@ -1323,10 +1417,6 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 						if(!array.contains(upper) && !this.disappearing_pieces.contains(upper)){/*自分の上にいるピースの中で消えてしまうもの以外をこれから動くピースリストに追加する
 																								同時に2カ所以上で消えるピースが出てくる可能性があるため*/
 							this.moving_pieces.push(upper);
-							upper.makeUnconnected();
-							if(upper.neighbors[0] != null){upper.neighbors[0].makeUnconnected();}
-							if(upper.neighbors[1] != null){upper.neighbors[1].makeUnconnected();}
-							this.effect_manager.removeEffect(upper);
 						}else{
 							break;
 						}
@@ -1377,10 +1467,6 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 							if(!array.contains(upper) && !this.disappearing_pieces.contains(upper)){/*自分の上にいるピースの中で消えてしまうもの以外をこれから動くピースリストに追加する
 																									同時に2カ所以上で消えるピースが出てくる可能性があるため*/
 								this.moving_pieces.push(upper);
-								upper.makeUnconnected();
-								if(upper.neighbors[0] != null){upper.neighbors[0].makeUnconnected();}
-								if(upper.neighbors[1] != null){upper.neighbors[1].makeUnconnected();}
-								this.effect_manager.removeEffect(upper);
 							}else{
 								break;
 							}

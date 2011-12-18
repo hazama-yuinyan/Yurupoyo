@@ -38,6 +38,7 @@
 
 <Effects>
 	<presets>
+		<font name="font_small">medium 'うずらフォント', 'MS ゴシック'</font>
 		<font name="default_font">large 'うずらフォント', 'MS ゴシック'</font>
 		<font name="font_large">x-large 'うずらフォント', 'MS ゴシック'</font>
 		<font name="font_very_large">xx-large 'うずらフォント', 'MS ゴシック'</font>
@@ -46,7 +47,7 @@
 		<image name="AKARI : normal, transparent, confused, crying, shocked, forced smile, blank, panicked, smiling">0, 4, 5, 6, 7, 8, 9, 10, 11</image>
 		<image name="CHINATSU : normal, happy, enchanted, shocked, angry, disgusted, tricking, refusing">0, 4, 5, 6, 7, 8, 9, 10</image>
 		<image name="YUI : normal, angry, confused, bitter smile, shocked">0, 4, 5, 6, 7</image>
-		<image name="KYOKO : normal, charming, scared, smiling, astonished, timid, wanting to kiss">0, 4, 5, 6, 7, 8, 9</image>
+		<image name="KYOKO : normal, charming, scared, smiling, astonished, timid, wanting to kiss, weeping">0, 4, 5, 6, 7, 8, 9, 10</image>
 		<image name="AYANO : normal, embarrassed, angry, relaxed, flinched">0, 4, 5, 6, 7</image>
 		<image name="CHITOSE : normal, gone, smiling">0, 4, 5</image>
 		<image name="HIMAWARI : normal, angry, disgusted, doubting">0, 4, 5, 6</image>
@@ -158,5 +159,16 @@
 		<Chinatsu with="kyoko" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[refusing]" end_time="20">ちょっと、京子先輩！やめてください</Chinatsu>
 		<Kyoko with="chinatsu" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[timid]" start_time="20" end_time="40">え～、ちょっとぐらいいいじゃ～ん</Kyoko>
 		<Chinatsu with="kyoko" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[angry]" start_time="40" end_time="60">よくないです！</Chinatsu>
+	</set>
+	
+	<!-- 京子とあかり -->
+	<set num="0">
+		<Akari with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">＼ｱｯｶﾘ~ﾝ／</Akari>
+		<Akari with="kyoko" type="Pieces + PieceFrameEffect + FadeOutEffect" rate="0.05" frame="[transparent]" start_time="0" end_time="20"></Akari>
+		<Kyoko with="akari" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">あかり～</Kyoko>
+		<Kyoko with="akari" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[astonished]" start_time="20" end_time="40">あかり！？あかり～！</Kyoko>
+		<Kyoko with="akari" type="Label + PieceFrameEffect" font="[font_small]" x="average with margin" y="average with margin" frame="[weeping]" start_time="40" end_time="60">例えこの世から消えてなくなろうと、私たちは一生忘れたりしないよ、あかり・・・</Kyoko>
+		<Akari with="kyoko" type="Label" font="[font_large]" x="average with margin" y="average with margin" start_time="50" end_time="70">京子ちゃん、あかり死んでないよ！死んでないから～！</Akari>
+		<Akari with="kyoko" type="Pieces + PieceFrameEffect + OpacityChangeEffect" value="1" frame="[crying]" start_time="50"></Akari>
 	</set>
 </Effects>
