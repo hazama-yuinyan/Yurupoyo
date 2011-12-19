@@ -38,6 +38,43 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  * 
+ * enchant.js v0.4.1
+ *
+ * Copyright (c) Ubiquitous Entertainment Inc.
+ * Dual licensed under the MIT or GPL Version 3 licenses
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * 
  * Mersenne Twister in JavaScript based on "mt19937ar.c"
  * 
  * JavaScript version by Magicant: Copyright (C) 2005 Magicant
@@ -215,6 +252,26 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 		tweet_button.y = y + 50;
 		tweet_button.width = 100;
 		tweet_button.backgroundColor = "#ffffff";
+		
+		/*var ranking_str = "";
+		var user_name = "test";
+		(function requestRanking(){
+			var http_obj = new XMLHttpRequest();
+			http_obj.open("POST", "http://filesforbots.me.land.to/games/Yurupoyo/modify_ranking.php", false);
+			http_obj.send("user_name=" + user_name + "score=" + score);
+			if(http_obj.readyState == 4 && http_obj.status == 200){
+				ranking_str = http_obj.responseText;
+			}else{
+				if(confirm("httpRequestStatus:" + http_obj.status + "\nエラーが発生しました。再度スコアの送信・受信を試みますか？")){
+					requestRanking();
+				}else{
+					return;
+				}
+			}
+		})();
+		
+		ranking_str.replace("\n", "<br>");
+		var ranking_label = new enchant.Label(ranking_str);*/
 		
 		(function(d,s,id){
     		var js,fjs=d.getElementsByTagName(s)[0];
@@ -1073,6 +1130,21 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		this.score_label = new Score();								//スコアを画面に表示するラベル
 		this.num_successive_disappearance = 1;						//現在の連鎖の数
 		this.effect_manager = new EffectManager();					//エフェクトマネージャー
+		this.manual_button = new enchant.Label('<a href="manual.html" target="_blank">MANUAL</a>');			//マニュアルを表示するボタン
+		this.manual_button.x = 20;
+		this.manual_button.y = this.height - 100;
+		this.manual_button.width = this.x / 2;
+		
+		/*manaul_button.touched = false;
+		manual_button.addEventListener('touchstart', function(){
+			this.touched = this.touched || true;
+		});
+		
+		manual_button.addEventListener('touchend', function(){
+			if(this.touched){
+				
+			}
+		});*/
 		
 		this.shapes = {"shapes" : [
 			           [new Piece(32, 32, this), null, null, null,
@@ -1245,7 +1317,7 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		this.cur_falling_pieces.pieces.forEach(function(piece, index, array){
 			if(!piece.tryToMove(0, 1)){	//自分の下1ますが空いているかどうか確かめる
 				if(piece.position.y <= 2){		//上から数えて3段目までピースがたまってしまっていたら、ゲームオーバー
-					var gameover_scene = new GameOverScene((this.x + this.width) / 2, (this.y + this.height) / 2, this.score_label.getScore());
+					var gameover_scene = new GameOverScene((this.x + this.width) / 2, this.y + 10, this.score_label.getScore());
 					game.pushScene(gameover_scene);
 					return;
 				}
@@ -1695,6 +1767,7 @@ var Stage = enchant.Class.create(enchant.Scene, {
 		panel.image = panel_background;
 		this.addChild(panel.next_piece_label.next_label);
 		this.addChild(panel.score_label);
+		this.addChild(panel.manual_button);
 		this.addChild(panel);
 		
 		this.backgroundColor = "#ebebeb";
