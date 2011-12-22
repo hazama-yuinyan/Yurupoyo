@@ -164,7 +164,8 @@ function setRulerStyle(style){
 	elem.setAttribute("style", new_style);
 }
 
-String.prototype.fitInWidth = function(max_width){
+String.prototype.fitInWidth = function(max_width, num_lines){
+	num_lines.val = 1;
 	if(this.length == 0){return "";}
 	if(this.getExpansion().width <= max_width){return this;}
 	var first, last, result = "";
@@ -172,7 +173,10 @@ String.prototype.fitInWidth = function(max_width){
 		for(last = this.length; last >= first; --last){
 			var s = this.slice(first, last);
 			if(s.getExpansion().width <= max_width){
-				if(last != this.length){s += "<br>";}			//文字列の最後には<br>を追加しない
+				if(last != this.length){			//文字列の最後には<br>を追加しない
+					s += "<br>";
+					++num_lines.val;
+				}
 				result = result.concat(s);
 				break;
 			}
@@ -709,7 +713,7 @@ var XmlManager = enchant.Class.create({
 			return Math.floor(this.average_coords.y);
 		}else if(val == "average with margin"){
 			return (this.average_coords.y + height > game.height) ? game.height - height : 
-				(this.average_coords.y >= this.panel_height / 2) ? this.average_coords.y - height : this.average_coords.y + height;
+				(this.average_coords.y >= (this.x + this.panel_height) / 2) ? this.average_coords.y - height : this.average_coords.y + height;
 		}
 		
 		return val;
@@ -775,11 +779,13 @@ var XmlManager = enchant.Class.create({
 				var font = (definition.font.search(/^\[.+\]$/) != -1) ? 
 						this.getPreset("font", definition.font.replace(/^\[(.+)\]$/, "$1")).content : definition.font;
 				setRulerStyle(" font: " + font);
-				var text = definition.text.slice(0);
-				if(infos != undefined){text = text.fitInWidth(infos.width);}
+				var text = definition.text.slice(0), num_lines = {"val" : 1};
+				if(infos != undefined){text = text.fitInWidth(infos.width, num_lines);}
+				//var width = (infos != undefined) ? infos.width : 160;
+				//setRulerStyle(" font: " + font + "width: " + width);
 				var size = text.getExpansion();
 				position.x = (infos != undefined) ? infos.x : this.interpretX(definition.x, size.width);
-				position.y = this.interpretY(definition.y, size.height);
+				position.y = this.interpretY(definition.y, size.height * num_lines.val);
 				
 				last_label = this.createNewLabel(font, position.x, position.y, (infos != undefined && size.width >= infos.width) 
 						? infos.width : size.width, text, definition.background_color, this.interpretColor(definition.color, definition.name));
