@@ -1,0 +1,11 @@
+<!-- Indices written at Sat, 24 Dec 2011 15:40:04 UTC -->
+
+<datastore-indexes>
+
+    <!-- Used 4 times in query history -->
+    <datastore-index kind="RankingData" ancestor="false" source="auto">
+        <property name="score" direction="desc"/>
+        <property name="__key__" direction="desc"/>
+    </datastore-index>
+
+</datastore-indexes>
