@@ -123,16 +123,14 @@ window.onload = function(){
 	
 	var user_name = prompt("ランキングに掲載するハンドルネームを入れてください。", "あかり");
 	if(user_name){
-		var score = 300;
+		var score = Math.floor(Math.random() * 1000);
 		
 		var http_obj = new XMLHttpRequest();
 		http_obj.open("post", "/yurupoyogae", true);
 		http_obj.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
-		var text;
 		http_obj.onreadystatechange = function recieve_ranking(){
-			if(this.readyState == 4 && this.status == 200){
-				text = http_obj.responseText;
-				var json_obj = JSON.parse(text);
+			if(this.readyState == 4 && this.status == 200 && this.getResponseHeader("Content-Type").search("application/json; charset=UTF-8") != -1){
+				var json_obj = JSON.parse(this.responseText);
 				
 				var ranking_list = document.createElement("div"), is_found = false, is_valid = true;
 				json_obj.forEach(function(obj, index){
@@ -151,28 +149,32 @@ window.onload = function(){
 				});
 				
 				if(!is_found){
-					if(score >= json_obj[json_obj.length - 1].score){	//今回のスコアが返ってきたスコアに入っているはずなのに入っていなければ、取得失敗と見なす
-						alert("ランキングの取得に失敗したようです。\nもう一度通信を試みます。");
-						http_obj = new XMLHttpRequest();
-						http_obj.open("get", "/yurupoyogae", true);
-						http_obj.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
-						http_obj.onreadystatechange = recieve_ranking;
-						http_obj.send(null);
-						return;
-					}
 					var new_rank = document.createElement("div");
-					new_rank.textConetnt = "ランク外 " + user_name + " " + score;
-					new_rank.setAttribute("style", "color: #000000; font: bold large 'うずらフォント'");
+					var new_span = document.createElement("span");
+					new_span.textContent = "ランク外 " + user_name + " " + score;
+					new_span.setAttribute("style", "color: #000000; font: bold large 'うずらフォント'");
+					new_rank.appendChild(new_span);
 					document.body.appendChild(new_rank);
 				}
-				//ranking_label.width = ranking_label.innerText.getExtent();
 				document.body.appendChild(ranking_list);
 				http_obj = null;
-			}else if(this.readyState == 4 && this.status >= 400){
+			}else if(this.readyState == 4){
 				alert("エラーが発生しました。\n" + http_obj.responseText);
+				if(confirm("再度ランキングの取得を試みますか？")){
+					http_obj = new XMLHttpRequest();
+					http_obj.open((this.status == 202) ? "get" : "post", "/yurupoyogae", true);
+					http_obj.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+					http_obj.onreadystatechange = recieve_ranking;
+					http_obj.send((this.status == 202) ? null : '{"user_name":"' + user_name + '","score":' + score + '}');
+				}else{
+					var new_elem = document.createElement("div");
+					new_elem.textContent = "ランキングの取得に失敗しました";
+					new_elem.setAttribute("style", "text-align:center; color: #ff1012; font: bold x-large 'うずらフォント'");
+					document.body.appendChild(new_elem);
+				}
 			}
 		}
-		http_obj.send('{"user_name":' + user_name + ',"score":' + score + '}');
+		http_obj.send('{"user_name":"' + user_name + '","score":' + score + '}');
 	}
 	
 	var div = document.createElement("div");

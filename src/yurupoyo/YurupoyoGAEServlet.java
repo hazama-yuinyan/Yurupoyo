@@ -2,6 +2,7 @@ package yurupoyo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.io.BufferedReader;
@@ -18,6 +19,10 @@ import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
 import javax.servlet.http.*;
+
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
 
 @SuppressWarnings("serial")
 public class YurupoyoGAEServlet extends HttpServlet {
@@ -94,44 +99,49 @@ public class YurupoyoGAEServlet extends HttpServlet {
 		try{	
 			String json_str = br.readLine();
 			RankingData new_data = json.parse(json_str, RankingData.class);
-			PersistenceManager pm = PMF.get().getPersistenceManager();
-			Transaction tx = pm.currentTransaction();
-
-			try{
-				tx.begin();
-				pm.makePersistent(new_data);
-				tx.commit();
-			}finally{
-				if(tx.isActive()){
-					tx.rollback();
-				}
-				pm.close();
-			}
 			
-			pm = PMF.get().getPersistenceManager();
-			pm.checkConsistency();
+			PersistenceManager pm = PMF.get().getPersistenceManager();
 			String query_str = new String("select from " + RankingData.class.getName() + " order by score desc, key desc");
-			String ranking_str;
+			String ranking_str = new String();
 			Query query = pm.newQuery(query_str);
-			tx = pm.currentTransaction();
+			Transaction tx = pm.currentTransaction();
 			try{
-				tx.begin();
 				ranking = (List<RankingData>)query.execute();
 				if(ranking.isEmpty()){		//ランキングの初期化処理
-					tx.commit();
+					query.closeAll();
 					initializeDataStore();
-					tx.begin();
-					ranking = (List<RankingData>)pm.newQuery(query_str).execute();
+					pm.refreshAll();
+					query = pm.newQuery(query_str);
+					ranking = (List<RankingData>)query.execute();
 				}
 				
-				RankingData last_data = ranking.get(ranking.size() - 1);		//最後の要素をデータベースから削除する
-				pm.deletePersistent(last_data);
-				List<RankingData> encoding_list = ranking.subList(0, ranking.size() - 1);				//データベースから返ってきたリストからも削除してからJSONにエンコードする
+				boolean should_add = false;
+				List<RankingData> encoding_list = ranking.subList(0, ranking.size() - 1);	//データベースから返ってきたリストからあらかじめ最後の要素を削除しておく
+				ListIterator<RankingData> encoding_itr = encoding_list.listIterator();
+				for(RankingData data : ranking){	//データベース内のすべてのスコアと新しいスコアを比較して新しいデータを追加すべきかどうか調べる
+					if(new_data.getScore() >= data.getScore()){
+						should_add = true;
+						encoding_itr.add(new_data);		//新しいデータを挿入する
+						break;
+					}
+					if(encoding_itr.hasNext()){
+						encoding_itr.next();
+					}
+				}
 				
-				assert(ranking.size() == 50);
-				ranking_str = json.format(encoding_list);
-				
-				tx.commit();
+				if(should_add){		//新しいデータを追加すべきなら、データを追加して一番最後のデータをデータベースから削除する
+					tx.begin();
+					new_data.setKey(KeyBuilderManager.instance().getNextKey());
+					RankingData last_data = (RankingData) pm.getObjectById(RankingData.class, ranking.get(ranking.size() - 1).getKey());		//最後の要素をデータベースから削除する
+					pm.deletePersistent(last_data);
+					pm.makePersistent(new_data);
+					ranking_str = json.format(encoding_list);
+					tx.commit();
+				}else{
+					ranking_str = json.format(ranking);
+				}
+			}catch(Exception e){
+				resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "something wrong has happened when it tries to read or write some data to the data store");
 			}finally{
 				if(tx.isActive()){
 					tx.rollback();
@@ -146,7 +156,7 @@ public class YurupoyoGAEServlet extends HttpServlet {
 			
 		}catch(IOException e){
 			log.log(Level.SEVERE, "an IO error occurred");
-			resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "something wrong has happened when it tries to write or read some data.");
+			resp.sendError(HttpServletResponse.SC_ACCEPTED, "something wrong has happened when it tries to write or read some data.");
 		}catch(JSONException e){
 			log.log(Level.SEVERE, "a JSON parse error occurred at " + e.getLineNumber() + ", " + e.getColumnNumber() + " : " + e.getMessage());
 			resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "failed to parse JSON.");
@@ -161,21 +171,23 @@ public class YurupoyoGAEServlet extends HttpServlet {
 	private void initializeDataStore(){
 		ArrayList<RankingData> initial_ranking = new ArrayList<RankingData>(50);
 		String[] names = {"あかり", "綾乃", "ちなつ", "千歳", "向日葵", "京子", "櫻子", "結衣", "test"};
-		for(int i = 0; i < 50; ++i){
-			initial_ranking.add(new RankingData(names[i % names.length], 0));
-		}
-		
 		PersistenceManager pm = PMF.get().getPersistenceManager();
+		Transaction tx = pm.currentTransaction();
 		try{
+			tx.begin();
+			
+			for(int i = 0; i < 50; ++i){
+				RankingData data = new RankingData(names[i % names.length], 1000, KeyBuilderManager.instance().getNextKey());
+				initial_ranking.add(data);
+			}
+	
 			pm.makePersistentAll(initial_ranking);
+			tx.commit();
 		}finally{
+			if(tx.isActive()){
+				tx.rollback();
+			}
 			pm.close();
-		}
-		
-		try{
-			Thread.sleep(3000);					//最初の要素の書き込みが終わるのを待つ
-		}catch(InterruptedException e){
-			throw new RuntimeException("failed to initialize the data store");
 		}
 	}
 }
