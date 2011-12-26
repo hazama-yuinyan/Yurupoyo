@@ -240,6 +240,15 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 		enchant.Scene.call(this);
 		
 		var scene = this;
+		this.backgroundColor = "rgba(100, 100, 100, 0.6)";
+		
+		var explain_label = new enchant.Label("スペースキーを押すとリプレイできます");
+		explain_label.x = panel_x;
+		explain_label.y = (y + 100) + panel_height / 2 + 10;
+		explain_label.width = panel_width;
+		explain_label.font = "normal large 'うずらフォント', 'MS ゴシック'";
+		explain_label.backgroundColor = "#ffffff";
+		this.addChild(explain_label);
 		
 		var tweet_button = new enchant.Label("");
 		tweet_button.x = x;
@@ -254,7 +263,7 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 		ranking_label.backgroundColor = "#ffffff";
 		
 		var ranking_list = document.createElement("div");
-		ranking_list.setAttribute("style", "height: " + panel_height / 2 + "px; border: inset 5px #ff1012; overflow: scroll");
+		ranking_list.setAttribute("style", "height: " + panel_height / 2 + "px; border: inset 5px #ff1012; overflow: hidden");
 		ranking_list.setAttribute("id", "ranking");
 		var ranking_title = document.createElement("p");
 		ranking_title.setAttribute("style", "text-align: center; font: bold large 'うずらフォント', 'MS ゴシック'");
@@ -270,8 +279,8 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 				if(this.readyState == 4 && this.status == 200 && this.getResponseHeader("Content-Type").search("application/json; charset=UTF-8") != -1){
 					var json_obj = JSON.parse(this.responseText);
 					
-					var tag_text = '<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://bit.ly/rLW8tO" '
-						+ 'data-counturl="http://filesforbots.me.land.to/games/Yurupoyo/index.html" data-via="hazama_akkarin" '
+					var tag_text = '<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://bit.ly/vg3MHc" '
+						+ 'data-counturl="http://yurupoyo.appspot.com/" data-via="hazama_akkarin" '
 						+ 'data-hashtags="yuruyuri, games" data-text="';
 					var text = "ゆるぽよで" + score + "点を獲得し";
 					
@@ -280,7 +289,8 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 						var line = document.createElement("span");
 						line.textContent = (index + 1) + " " + obj.user_name + " " + obj.score;
 						var style;
-						if(!is_found && obj.user_name.search(user_name) != -1 && obj.score == score){
+						if(!is_found && obj.user_name.search(user_name.replace(/[\(\)\$\[\]\.\?\*\+\^\!\{\}\\\|\/]/g, "\\$&")) != -1 
+								&& obj.score == score){
 							style = "color: #ff1012; font: bold large 'うずらフォント'";
 							text += "て" + (index + 1) + "位になったよ！";
 							is_found = true;
@@ -342,10 +352,12 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 		
 		this.addEventListener('enterframe', function(){
 			var ranking_tag = document.getElementById("ranking");
-			if(ranking_tag.scrollTop != ranking_tag.scrollHeight - ranking_tag.clientHeight){		//ランキングを少しずつスクロールさせる
-				++ranking_tag.scrollTop;
-			}else{
-				ranking_tag.scrollTop = 0;
+			if(ranking_tag != null){
+				if(ranking_tag.scrollTop != ranking_tag.scrollHeight - ranking_tag.clientHeight){
+					++ranking_tag.scrollTop;	//ランキングを少しずつスクロールさせる
+				}else{
+					ranking_tag.scrollTop = 0;
+				}
 			}
 			
 			if(game.input.a){
@@ -362,6 +374,8 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 var PauseScene = enchant.Class.create(enchant.Scene, {
 	initialize : function(x, y){
 		enchant.Scene.call(this);
+		
+		this.backgroundColor = "rgba(100, 100, 100, 0.6)";
 		
 		var pause_label = new enchant.Label("PAUSED");
 		pause_label.font = "bold xx-large 'うずらフォント','MS ゴシック'";
@@ -388,7 +402,7 @@ var Score = enchant.Class.create(enchant.Label, {
 		this.x = 0;
 		this.y = 0;
 		this.font = "bold xx-large 'うずらフォント','MS ゴシック'";
-		this.backgroundColor = "#ffffff";
+		this.backgroundColor = "#ebebeb";
 		this.color = "#ff1512";
 		this.score = 0;
 	},
@@ -412,7 +426,7 @@ var NextPieceLabel = enchant.Class.create({
 		this.piece_up_left_pos = {"x" : x + 16, "y" : y + 50};
 		this.next_label = new enchant.Label("NEXT");
 		this.next_label.font = "bold xx-large 'うずらフォント','MS ゴシック'";
-		this.next_label.backgroundColor = "#ffffff";
+		this.next_label.backgroundColor = "#ebebeb";
 		this.next_label.color = "#000000";
 		this.next_label.x = 25;
 		this.next_label.y = this.y;
@@ -1194,13 +1208,22 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		this.score_label = new Score();								//スコアを画面に表示するラベル
 		this.num_successive_disappearance = 1;						//現在の連鎖の数
 		this.effect_manager = new EffectManager();					//エフェクトマネージャー
-		this.home_button = new enchant.Label('<a href="http://filesforbots.me.land.to/index.html>HOME</a>"');	//ホームに戻るリンクボタン
+		this.home_button = new enchant.Label('<a href="http://filesforbots.me.land.to/index.html"  target="_blank"'
+				+ ' style="border: outset 5px #aaaaaa; border-radius: 30px;'
+				+ ' color: #000000; background-color: #aaaaaa; box-shadow: 2px 2px 1px #bbbcbc; text-decoration: none;'
+				+ 'background: -moz-linear-gradient(top, #fff, #F1F1F1 1%, #F1F1F1 50%, #DFDFDF 99%, #ccc);'  
+			    + 'background: -webkit-gradient(linear, left top, left bottom, from(#fff), color-stop(0.01, #F1F1F1),'
+			    + 'color-stop(0.5, #F1F1F1), color-stop(0.99, #DFDFDF), to(#ccc));">HOME</a>"');	//ホームに戻るリンクボタン
 		this.home_button.x = 0;
 		this.home_button.y = this.height - 50;
 		this.home_button.width = this.x / 2;
-		this.manual_button = new enchant.Label('<a href="manual.html" target="_blank">MANUAL</a>');			//マニュアルを表示するボタン
-		this.manual_button.x = this.x / 2;
-		this.manual_button.y = this.height - 50;
+		this.manual_button = new enchant.Label('<a href="manual.html" target="_blank" style="border: outset 5px #aaaaaa; border-radius: 30px;'
+				+ ' color: #000000; background-color: #aaaaaa; box-shadow: 2px 2px 1px #bbbcbc; text-decoration: none;'
+				+ 'background: -moz-linear-gradient(top, #fff, #F1F1F1 1%, #F1F1F1 50%, #DFDFDF 99%, #ccc);'  
+			    + 'background: -webkit-gradient(linear, left top, left bottom, from(#fff), color-stop(0.01, #F1F1F1),'
+			    + 'color-stop(0.5, #F1F1F1), color-stop(0.99, #DFDFDF), to(#ccc));">MANUAL</a>');			//マニュアルを表示するボタン
+		this.manual_button.x = 20;
+		this.manual_button.y = this.height - 100;
 		this.manual_button.width = this.x / 2;
 		
 		this.shapes = {"shapes" : [
@@ -1905,7 +1928,7 @@ window.onload = function(){
 	game.fps = 30;
 	game.preload(['images/piece_akari.png', 'images/piece_ayano.png', 'images/piece_chinatsu.png', 'images/piece_chitose.png',
 	              'images/piece_himawari.png', 'images/piece_kyoko.png', 'images/piece_sakurako.png', 'images/piece_yui.png']);
-	game.is_debug = true;
+	game.is_debug = false;
 	game.onload = function(){
 		sound_manager = new SoundManager();
 		label_manager = new LabelManager();
