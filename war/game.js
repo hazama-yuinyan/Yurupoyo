@@ -1194,9 +1194,13 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		this.score_label = new Score();								//スコアを画面に表示するラベル
 		this.num_successive_disappearance = 1;						//現在の連鎖の数
 		this.effect_manager = new EffectManager();					//エフェクトマネージャー
+		this.home_button = new enchant.Label('<a href="http://filesforbots.me.land.to/index.html>HOME</a>"');	//ホームに戻るリンクボタン
+		this.home_button.x = 0;
+		this.home_button.y = this.height - 50;
+		this.home_button.width = this.x / 2;
 		this.manual_button = new enchant.Label('<a href="manual.html" target="_blank">MANUAL</a>');			//マニュアルを表示するボタン
-		this.manual_button.x = 20;
-		this.manual_button.y = this.height - 100;
+		this.manual_button.x = this.x / 2;
+		this.manual_button.y = this.height - 50;
 		this.manual_button.width = this.x / 2;
 		
 		this.shapes = {"shapes" : [
@@ -1823,6 +1827,7 @@ var Stage = enchant.Class.create(enchant.Scene, {
 		panel.image = panel_background;
 		this.addChild(panel.next_piece_label.next_label);
 		this.addChild(panel.score_label);
+		this.addChild(panel.home_button);
 		this.addChild(panel.manual_button);
 		this.addChild(panel);
 		

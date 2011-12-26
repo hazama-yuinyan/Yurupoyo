@@ -1,8 +1,8 @@
-<!-- Indices written at Sun, 25 Dec 2011 17:46:18 UTC -->
+<!-- Indices written at Mon, 26 Dec 2011 18:22:14 UTC -->
 
 <datastore-indexes>
 
-    <!-- Used 13 times in query history -->
+    <!-- Used 1 time in query history -->
     <datastore-index kind="RankingData" ancestor="false" source="auto">
         <property name="score" direction="desc"/>
         <property name="__key__" direction="desc"/>
