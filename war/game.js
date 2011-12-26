@@ -1839,7 +1839,7 @@ var Stage = enchant.Class.create(enchant.Scene, {
 			});
 		}
 		
-		var prev_touched_pos = {"x" : 0, "y" : 0}, touched = false, prev_touched_frame = 0;
+		var prev_touched_pos = {"x" : 0, "y" : 0}, touched = false, prev_touched_frame = 0, amount_of_moving = 5;
 		var isInPlayerPieces = function(x, y){
 			var player_pieces = panel.cur_falling_pieces;
 			return (player_pieces.x <= x && x <= player_pieces.x + player_pieces.width && player_pieces.y <= y 
@@ -1858,15 +1858,15 @@ var Stage = enchant.Class.create(enchant.Scene, {
 		this.addEventListener('touchmove', function(e){
 			if(touched){
 				var pos_diff = {"x" : e.x - prev_touched_pos.x, "y" : e.y - prev_touched_pos.y}, player_pieces = panel.cur_falling_pieces;
-				if(pos_diff.x >= 10){
+				if(pos_diff.x >= amount_of_moving){
 					game.input["right"] = true;
-				}else if(pos_diff.x <= -10){
+				}else if(pos_diff.x <= -amount_of_moving){
 					game.input["left"] = true;
-				}else if(e.x >= player_pieces.x + player_pieces.width / 2 && pos_diff.y >= 10 
-						|| e.x <= player_pieces.x + player_pieces.width / 2 && pos_diff.y <= -10){
+				}else if(e.x >= player_pieces.x + player_pieces.width / 2 && pos_diff.y >= amount_of_moving 
+						|| e.x <= player_pieces.x + player_pieces.width / 2 && pos_diff.y <= -amount_of_moving){
 					game.input["down"] = true;
-				}else if(e.x >= player_pieces.x + player_pieces.width / 2 && pos_diff.y <= -10 
-						|| e.x <= player_pieces.x + player_pieces.width / 2 && pos_diff.y >= 10){
+				}else if(e.x >= player_pieces.x + player_pieces.width / 2 && pos_diff.y <= -amount_of_moving 
+						|| e.x <= player_pieces.x + player_pieces.width / 2 && pos_diff.y >= amount_of_moving){
 					game.input["up"] = true;
 				}else{
 					['left', 'right', 'up', 'down', 'a', 'b'].forEach(function(type){
