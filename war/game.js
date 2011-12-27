@@ -372,10 +372,18 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 });
 
 var PauseScene = enchant.Class.create(enchant.Scene, {
-	initialize : function(x, y){
+	initialize : function(x, y, panel_width){
 		enchant.Scene.call(this);
 		
 		this.backgroundColor = "rgba(100, 100, 100, 0.6)";
+		
+		var explain_label = new enchant.Label("矢印キー上、またはクリック・タッチでゲームを再開します");
+		explain_label.x = x;
+		explain_label.y = y + 40;
+		explain_label.font = "bold large 'うずらフォント', 'MS ゴシック'";
+		explain_label.width = panel_width / 2;
+		explain_label.backgroundColor = "#ffffff";
+		explain_label.color = "#000000";
 		
 		var pause_label = new enchant.Label("PAUSED");
 		pause_label.font = "bold xx-large 'うずらフォント','MS ゴシック'";
@@ -385,7 +393,22 @@ var PauseScene = enchant.Class.create(enchant.Scene, {
 		pause_label.width = pause_label.text.getExpansion().width;
 		pause_label.backgroundColor = "#ffffff";
 		pause_label.color = "#ff1512";
+		
+		this.addChild(explain_label);
 		this.addChild(pause_label);
+		
+		var touched = false;
+		this.addEventListener('touchstart', function(){
+			touched = true;
+		});
+		
+		this.addEventListener('touchend', function(){
+			if(touched && !game.input.up){
+				game.input["up"] = true;
+				touched = false;
+			}
+		});
+		
 		this.addEventListener('enterframe', function(){
 			if(game.input.up){		//upボタンを押されたらポーズシーンを抜ける
 				game.popScene();
@@ -1213,18 +1236,52 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 				+ ' color: #000000; background-color: #aaaaaa; box-shadow: 2px 2px 1px #bbbcbc; text-decoration: none;'
 				+ 'background: -moz-linear-gradient(top, #fff, #F1F1F1 1%, #F1F1F1 50%, #DFDFDF 99%, #ccc);'  
 			    + 'background: -webkit-gradient(linear, left top, left bottom, from(#fff), color-stop(0.01, #F1F1F1),'
-			    + 'color-stop(0.5, #F1F1F1), color-stop(0.99, #DFDFDF), to(#ccc));">HOME</a>"');	//ホームに戻るリンクボタン
+			    + 'color-stop(0.5, #F1F1F1), color-stop(0.99, #DFDFDF), to(#ccc));">HOME</a>');	//ホームに戻るリンクボタン
 		this.home_button.x = 0;
-		this.home_button.y = this.height - 50;
+		this.home_button.y = this.y + (this.height - 10);
 		this.home_button.width = this.x / 2;
 		this.manual_button = new enchant.Label('<a href="manual.html" target="_blank" style="border: outset 5px #aaaaaa; border-radius: 30px;'
 				+ ' color: #000000; background-color: #aaaaaa; box-shadow: 2px 2px 1px #bbbcbc; text-decoration: none;'
 				+ 'background: -moz-linear-gradient(top, #fff, #F1F1F1 1%, #F1F1F1 50%, #DFDFDF 99%, #ccc);'  
 			    + 'background: -webkit-gradient(linear, left top, left bottom, from(#fff), color-stop(0.01, #F1F1F1),'
 			    + 'color-stop(0.5, #F1F1F1), color-stop(0.99, #DFDFDF), to(#ccc));">MANUAL</a>');			//マニュアルを表示するボタン
-		this.manual_button.x = 20;
-		this.manual_button.y = this.height - 100;
+		this.manual_button.x = this.x / 2;
+		this.manual_button.y = this.y + (this.height - 10);
 		this.manual_button.width = this.x / 2;
+		
+		var TOUCH_ENABLED = (function() {
+		    var div = document.createElement('div');
+		    div.setAttribute('ontouchstart', 'return');
+		    return typeof div.ontouchstart == 'function';
+		})();
+		
+		var platform_num = (TOUCH_ENABLED) ? 1 : 0;
+		var texts = [["PC", "スマートフォン"],
+		             ["矢印キー右、またはマウスで右にドラッグ", "ピースを右にドラッグ"],
+		             ["矢印キー左、またはマウスで左にドラッグ", "ピースを左にドラッグ"],
+		             ["矢印キー下、またはピースの中心軸より右側で真下にドラッグするか左側で真上にドラッグする", "中心軸より右側なら真下、左側なら真上にドラッグ"],
+		             ["矢印キー上、または時計回りに回転と逆の動作をマウスでする", "時計回りに回転と逆の動作"],
+		             ["スペースキー、またはピースをクリックする", "ピースをタッチする"],
+		             ["Pキー、またはSCOREのあたりをクリック", "SCOREのあたりをタッチ"]];
+		this.quick_reference = new enchant.Label(['<table>',
+	    		'<caption>クイックリファレンス</caption>',
+	    		'<colgroup span="1" style="width:33.3%; font: normal small \'うずらフォント\', \'MS ゴシック\'">',
+	    		'<colgroup span="1" style="width:66.6%; font: normal small \'うずらフォント\', \'MS ゴシック\'">',
+	    		'<thead>',
+	    		'	<tr><th>操作内容</th><th>', texts[0][platform_num], '</th></tr>',
+	    		'</thead>',
+	    		'<tbody>',
+	    		'	<tr><td>右に移動</td><td>', texts[1][platform_num], '</td></tr>',
+	    		'	<tr><td>左に移動</td><td>', texts[2][platform_num], '</td></tr>',
+	    		'	<tr><td>時計回りに回転</td><td>', texts[3][platform_num], '</td></tr>',
+	    		'	<tr><td>反時計回りに回転</td><td>', texts[4][platform_num], '</td>></tr>',
+	    		'	<tr><td>ピースを着地させる</td><td>', texts[5][platform_num], '</td></tr>',
+	    		'	<tr><td>ポーズ</td><td>', texts[6][platform_num], '</td></tr>',
+	    		'</tbody>',
+	    	'</table>'].join(""));
+		this.quick_reference.x = 0;
+		this.quick_reference.y = this.y + this.height / 3;
+		this.quick_reference.width = this.x;
 		
 		this.shapes = {"shapes" : [
 			           [new Piece(32, 32, this), null, null, null,
@@ -1377,8 +1434,9 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 				this.is_ready_for_next_piece = true;
 				game.input["a"] = false;
 			}else if(game.input.b){			//Bボタンを押されたらポーズする
-				var pause_scene = new PauseScene((this.x + this.width) / 2, (this.y + this.height) / 2);
+				var pause_scene = new PauseScene((this.x + this.width) / 2, (this.y + this.height) / 2, this.width);
 				game.pushScene(pause_scene);
+				game.input["b"] = false;
 			}
 		}
 	},
@@ -1850,6 +1908,7 @@ var Stage = enchant.Class.create(enchant.Scene, {
 		panel.image = panel_background;
 		this.addChild(panel.next_piece_label.next_label);
 		this.addChild(panel.score_label);
+		this.addChild(panel.quick_reference);
 		this.addChild(panel.home_button);
 		this.addChild(panel.manual_button);
 		this.addChild(panel);
@@ -1867,11 +1926,11 @@ var Stage = enchant.Class.create(enchant.Scene, {
 			});
 		}
 		
-		var prev_touched_pos = {"x" : 0, "y" : 0}, touched = false, prev_touched_frame = 0, amount_of_moving = 5;
+		var prev_touched_pos = {"x" : 0, "y" : 0}, touched = false, prev_touched_frame = 0, amount_of_moving = 5, margin = 32;
 		var isInPlayerPieces = function(x, y){
 			var player_pieces = panel.cur_falling_pieces;
-			return (player_pieces.x <= x && x <= player_pieces.x + player_pieces.width && player_pieces.y <= y 
-					&& y <= player_pieces.y + player_pieces.height);
+			return (player_pieces.x - margin <= x && x <= player_pieces.x + player_pieces.width + margin && player_pieces.y - margin <= y 
+					&& y <= player_pieces.y + player_pieces.height + margin);
 		}
 		
 		this.addEventListener('touchstart', function(e){
@@ -1911,19 +1970,32 @@ var Stage = enchant.Class.create(enchant.Scene, {
 		
 		this.addEventListener('touchend', function(e){
 			if(touched){
-				if(game.frame - prev_touched_frame <= 10){
+				if(game.frame - prev_touched_frame <= 20){
 					game.input["a"] = true;
 				}else{
-					if(game.input["a"]){
-						game.input["a"] = false;
-					}
+					['a', 'b'].forEach(function(type){
+						if(game.input[type]){
+							game.input[type] = false;
+						}
+					});
 				}
+				
+				touched = false;
+			}else if(e.x <= panel.x && e.y <= panel.y){
+				game.input["b"] = true;
 			}
 		});
 	}
 });
 
 window.onload = function(){
+	if(navigator.product == 'Gecko'){
+		if(!confirm("あなたはFirefoxをお使いのようですが、Firefoxを使用すると音が鳴らないなど一部の機能が制限されます。\nそれでも続けますか？")){
+			location.href = "http://filesforbots.me.land.to/index.html";
+			return;
+		}
+	}
+	
 	game = new enchant.Game(480, 760);
 	game.fps = 30;
 	game.preload(['images/piece_akari.png', 'images/piece_ayano.png', 'images/piece_chinatsu.png', 'images/piece_chitose.png',
