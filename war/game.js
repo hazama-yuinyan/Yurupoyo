@@ -252,36 +252,38 @@ var StartScene = enchant.Class.create(enchant.Scene, {
 		menu_label.backgroundColor = "#ffffff";
 		this.addChild(menu_label);
 		
-		var explain_label = new enchant.Label("スペースキーでモード選択ができます");
-		explain_label.x = 50;
+		var explain_label = new enchant.Label("スペースキーまたはタッチでモード選択ができます");
+		explain_label.x = 0;
 		explain_label.y = 350;
 		explain_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
 		setRulerStyle(" font: " + explain_label.font);
-		explain_label.width = explain_label.text.getExpansion().width;
+		explain_label.width = game.width;
 		explain_label.backgroundColor = "#ffffff";
 		this.addChild(explain_label);
 		
-		with(this){
-			this.mode_labels = new Array();
-			var slow_mode_label = new enchant.Label("ゆったりモード");
-			slow_mode_label.x = game.width / 2 - 90;
-			slow_mode_label.y = 200;
-			slow_mode_label.color = ColorTable[PieceTypes.AKARI];
-			slow_mode_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
-			slow_mode_label.width = slow_mode_label.text.getExpansion().width;
-			slow_mode_label.backgroundColor = "#ffffff";
-			mode_labels.push(slow_mode_label);
-			addChild(slow_mode_label);
-			
-			var fast_mode_label = new enchant.Label("サバイバルモード");
-			fast_mode_label.x = game.width / 2 - 90;
-			fast_mode_label.y = 250;
-			fast_mode_label.color = "#000000";
-			fast_mode_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
-			fast_mode_label.width = fast_mode_label.text.getExpansion().width;
-			fast_mode_label.backgroundColor = "#ffffff";
-			mode_labels.push(fast_mode_label);
-			addChild(fast_mode_label);
+		this.mode_labels = new Array();
+		var slow_mode_label = new enchant.Label("ゆったりモード");
+		slow_mode_label.x = game.width / 2 - 90;
+		slow_mode_label.y = 200;
+		slow_mode_label.color = ColorTable[PieceTypes.AKARI];
+		slow_mode_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
+		slow_mode_label.width = slow_mode_label.text.getExpansion().width;
+		slow_mode_label.backgroundColor = "#ffffff";
+		this.mode_labels.push(slow_mode_label);
+		this.addChild(this.mode_labels[0]);
+
+		var fast_mode_label = new enchant.Label("サバイバルモード");
+		fast_mode_label.x = game.width / 2 - 90;
+		fast_mode_label.y = 250;
+		fast_mode_label.color = "#000000";
+		fast_mode_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
+		fast_mode_label.width = fast_mode_label.text.getExpansion().width;
+		fast_mode_label.backgroundColor = "#ffffff";
+		this.mode_labels.push(fast_mode_label);
+		this.addChild(this.mode_labels[1]);
+		
+		function isInArea(x, y, obj){
+			return(obj.x <= x && x <= obj.x + obj.width && obj.y <= y && y <= obj.y + obj._element.clientHeight);
 		}
 		
 		this.addEventListener('enterframe', function(){
@@ -303,6 +305,29 @@ var StartScene = enchant.Class.create(enchant.Scene, {
 				last_selected = selected_menu_num;
 			}
 		});
+		
+		var touched = false, prev_touched_frame = 0;
+		this.addEventListener('touchstart', function(e){
+			if(isInArea(e.x, e.y, this.mode_labels[0]) || isInArea(e.x, e.y, this.mode_labels[1])){
+				touched = true;
+				prev_touched_frame = game.frame;
+			}
+		});
+		
+		this.addEventListener('touchend', function(e){
+			if(touched && game.frame - prev_touched_frame <= 20){
+				if(isInArea(e.x, e.y, this.mode_labels[0])){
+					selected_menu_num = 0;
+				}else if(isInArea(e.x, e.y, this.mode_labels[1])){
+					selected_menu_num = 1;
+				}
+				
+				if(selected_menu_num == last_selected){
+					game.is_survival = (selected_menu_num == 1);
+					game.popScene();
+				}
+			}
+		});
 	}
 });
 
@@ -313,7 +338,7 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 		var scene = this;
 		this.backgroundColor = "rgba(100, 100, 100, 0.6)";
 		
-		var explain_label = new enchant.Label("スペースキーを押すとメニューに戻ります");
+		var explain_label = new enchant.Label("スペースキーを押すか画面をタッチ・クリックするとメニューに戻ります");
 		explain_label.x = 0;
 		explain_label.y = (y + 100) + panel_height / 2 + 40;
 		explain_label.width = game.width;
@@ -441,6 +466,24 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 				game.pushScene(stage);
 				game.pushScene(menu);
 				game.input['a'] = false;
+			}
+		});
+		
+		var touched = false, prev_touched_frame = 0;
+		this.addEventListener('touchstart', function(){
+			prev_touched_frame = game.frame;
+			touched = true;
+		});
+		
+		this.addEventListener('touchend', function(){
+			if(touched){
+				if(game.frame - prev_touched_frame <= 20){
+					game.input["a"] = true;
+				}else{
+					game.input['a'] = false;
+				}
+				
+				touched = false;
 			}
 		});
 	}
