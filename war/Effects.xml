@@ -9,8 +9,8 @@
 	You must keep "preset_names" and "contents" balanced. In "preset_names" and "contents", spaces before and after comma are ignored.
 	
 	Content:<piece_type_name property_name="property_value"...>some text</piece_type_name>
-		     <set num="some number">[some Effect definitions]</set>
-	Property names list:{num, with, type, font(for "Label"), x(for "Label"), y(for "Label"), start_time
+		    <set num="some number" (enable_if="some condition")>[some Effect definitions]</set>
+	Property names list:{num, enable_if[optional], with, type, font(for "Label"), x(for "Label"), y(for "Label"), start_time
 	, end_time(except for "PieceFrameEffect" and "SoundEffect"), rate(for "FadeInEffect", "FadeOutEffect" and "TimeIndependentVibrationEffect")
 	, amplitude_x(for "TimeIndependentVibrationEffect"), amplitude_y(for "TimeIndependentVibrationEffect")
 	, background_color(for "Label")[optional]{If omitted, the default value "#ffffff" is applied}
@@ -18,6 +18,11 @@
 	that the tag has a focus on}
 	}
 	Property explanation: num; The pattern number. You can define as many effects as you want for each type of pieces.
+	enable_if; This property enables the effect only when the condition is satisfied. Condition can be written in the way like mathematical expressions.
+	And like in some programming languages such as PHP, variables are represented by a dollar sign followed by the name of the variable.
+	But unlike PHP, you can't define variables by yourself. The following keywords are allowed to use as variable names.
+	"now" followed by a comma and "year", "month", "date", "day" and "hour", "panel", followed by a comma and "width" and "height",
+	the piece_type name that the tag has focus on followed by a comma and "x" and "y", "score".
 	with; This property enables the effect only when a coupling with this type happens.
 	type; Effect type. Currently, "Label", "Piece(s)", "FadeInEffect", "FadeOutEffect", "TimeIndependentVibrationEffect" and "SoundEffect" are available.
 	And the "+" sign enables you to define several effects in a tag.
@@ -26,11 +31,11 @@
 	y; The y coordinates.
 	start_time; The time at which the effect happens or start affecting. The value represents the frame counts after the effect is added to EffectManager.
 	end_time; The time at which the effect ends or end affecting. The value also represents the frame counts after the effect is added to EffectManager.
-	rate; The rate at which an object fades in or out at one time. The value over 1 or less than 0 is meaningless.
+	rate; The rate at which an object fades in or out at one time. Values over 1 or less than 0 are meaningless.
 	amplitude_x; The amplitude of x. Which means the object will vibrate between (current x coordinates - amplitude_x) and (current x coordinates + amplitude_x).
 	amplitude_y; The amplitude of y. Which means the object will vibrate between (current y coordinates - amplitude_y) and (current y coordinates + amplitude_y).
 	background_color; The background color. 
-	color; The color of the text. You can write it in either ways below.
+	color; The color of the text. You can write it in either way below.
 	"#xxxxxx"(where x is a hexadecimal digit), "rgb(x, y, z)"(where 0 <= x, y, z < 256), "[preset_name defined in presets/color section]".
 	Notes: The text field is only available in "Label".
  -->
@@ -54,23 +59,23 @@
 		<image name="SAKURAKO : normal, angry, timid, excited">0, 4, 5, 6</image>
 	</presets>
 	
-	<set num="0">
+	<set num="1">
 		<Akari type="Label + FadeInEffect" font="[default_font]" x="average" y="average" end_time="30" rate="0.1">＼ｱｯｶﾘ~ﾝ／</Akari>
 		<Akari type="Pieces + FadeOutEffect" rate="0.05" end_time="20"></Akari>
 		<Akari type="PieceFrameEffect + SoundEffect" frame="[transparent]" buffer_num="AKKARIN" start_time="0"></Akari>
 	</set>
-	<Ayano num="0" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">最後までやらなきゃ罰金バッキンガムよ！</Ayano>
-	<Chinatsu num="0" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">今日はチーナ、みんなのためにがんばっちゃいま～す！</Chinatsu>
-	<Chitose num="0" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">ほなうちは、妄想する準備しとくわ～</Chitose>
-	<Himawari num="0" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">この調子でわたくしと生徒会副会長を目指しましょう！</Himawari>
-	<Kyoko num="0" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">＼ラムレーズン！／</Kyoko>
-	<Kyoko num="1" type="Label" font="[font_large]" x="average with margin" y="average with margin" end_time="30">＼きらきらにゃ～んにゃ～ん／</Kyoko>
-	<Sakurako num="0" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">絶対生徒会副会長の座は向日葵にはやらないもん！</Sakurako>
-	<Yui num="0" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">・・本当に私でよかったの？</Yui>
-	<Yui num="1" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">えっと・・先に帰るね？</Yui>
+	<Ayano num="1" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">最後までやらなきゃ罰金バッキンガムよ！</Ayano>
+	<Chinatsu num="1" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">今日はチーナ、みんなのためにがんばっちゃいま～す！</Chinatsu>
+	<Chitose num="1" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">ほなうちは、妄想する準備しとくわ～</Chitose>
+	<Himawari num="1" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">この調子でわたくしと生徒会副会長を目指しましょう！</Himawari>
+	<Kyoko num="1" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">＼ラムレーズン！／</Kyoko>
+	<Kyoko num="2" type="Label" font="[font_large]" x="average with margin" y="average with margin" end_time="30">＼きらきらにゃ～んにゃ～ん／</Kyoko>
+	<Sakurako num="1" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">絶対生徒会副会長の座は向日葵にはやらないもん！</Sakurako>
+	<Yui num="1" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">・・本当に私でよかったの？</Yui>
+	<Yui num="2" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="30">えっと・・先に帰るね？</Yui>
 
 	<!-- ちなつとあかり -->
-	<set num="0">
+	<set num="1">
 		<Akari with="chinatsu" type="Label + FadeInEffect" font="[default_font]" x="average with margin" y="average with margin" end_time="20" rate="0.1">＼ｱｯｶ・・・</Akari>
 		<Chinatsu with="akari" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="15">あかりちゃ～ん</Chinatsu>
 		<Chinatsu with="akari" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="15" end_time="40">またキスの練習しよ～</Chinatsu>
@@ -78,7 +83,7 @@
 	</set>
 	
 	<!-- 結衣とちなつ -->
-	<set num="0">
+	<set num="1">
 		<Chinatsu with="yui" type="Label + PieceFrameEffect" font="[font_large]" x="average with margin" y="average with margin" frame="[happy]" start_time="0" end_time="20">きゃ～結衣せんぱぁ～い！</Chinatsu>
 		<Chinatsu with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">結衣先輩と一緒に消えれるなんてこの上ない幸せですぅ～！</Chinatsu>
 		<Chinatsu with="yui" type="Label + PieceFrameEffect + SoundEffect" font="[font_large]" x="average with margin" y="average with margin" frame="[enchanted]" buffer_num="VERY_SHINING" start_time="40" end_time="60">もう私、このまま天からお迎えが来ちゃってもいいかも・・・</Chinatsu>
@@ -86,20 +91,20 @@
 	</set>
 	
 	<!-- 結衣と京子 -->
-	<set num="0">
+	<set num="1">
 		<Kyoko with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">どうも～、キョッピー＆ユッピーで～す！ＣＭのあと・・・</Kyoko>
 		<Kyoko with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="25" end_time="45">もしかしたら何かネタやるかも！</Kyoko>
 		<Yui with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="30" end_time="45">あの挨拶はなんだったんだよ！っていうかＣＭってなに？！</Yui>
 	</set>
 	
-	<set num="1">
+	<set num="2">
 		<Kyoko with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="15">＼きらきらにゃ～んにゃ～ん／</Kyoko>
 		<Yui with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="5" end_time="20">・・いきなりどうした</Yui>
 		<Kyoko with="yui" type="Label" font="[font_large]" x="average with margin" y="average with margin" start_time="20" end_time="40">＼きらきらにゃ～んにゃ～ん／</Kyoko>
 		<Yui with="kyoko" type="Label + PieceFrameEffect" font="[font_very_large]" x="average with margin" y="average with margin" frame="[angry]" start_time="25" end_time="40">少し黙れよ！</Yui>
 	</set>
 	
-	<set num="2" ><!-- enable_if="12 < now.month " -->
+	<set num="3" enable_if="12 = $now.month or $now.month &lt; 3">
 		<Kyoko with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">いや～、すっかり冬ですな～</Kyoko>
 		<Yui with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">なんだよ、改まっちゃって。京子らしくないな</Yui>
 		<Kyoko with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">いや～、ずいぶん寒くなったなと思って</Kyoko>
@@ -108,7 +113,7 @@
 		<Yui with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="40" end_time="60">それが言いたいだけかよ！</Yui>
 	</set>
 	
-	<set num="3" ><!--  enable_if="piece1.y = height / 3"-->
+	<set num="4" enable_if="$kyoko.y &lt;= $panel.height / 3">
 		<Kyoko with="yui" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[scared]" start_time="0" end_time="20">わ〜ん、結衣〜、高いとこ怖いよ〜</Kyoko>
 		<Yui with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">え？お前ってそんなキャラだったっけ・・？</Yui>
 		<Kyoko with="yui" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">わ〜ん、結衣ひどいよぉ〜。あたしだってか弱い女の子なんだよ？</Kyoko>
@@ -118,7 +123,7 @@
 	</set>
 	
 	<!-- 京子と綾乃 -->
-	<set num="0">
+	<set num="1">
 		<Ayano with="kyoko" type="Label" font="[font_large]" x="average with margin" y="average with margin" end_time="20">としのーきょーこー！</Ayano>
 		<Kyoko with="ayano" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="5" end_time="20">なぁに～、あやの～</Kyoko>
 		<Ayano with="kyoko" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[flinched]" start_time="20" end_time="40">（ととと、歳納京子！？なんでいるのよ・・・）</Ayano>
@@ -128,7 +133,7 @@
 	</set>
 	
 	<!-- 結衣とあかり -->
-	<set num="0">
+	<set num="1">
 		<Akari with="yui" type="Label + FadeOutEffect" font="[default_font]" x="average with margin" y="average with margin" end_time="20" rate="0.05">＼ｱｯｶﾘ~ﾝ／</Akari>
 		<Akari with="yui" type="Piece + FadeOutEffect" rate="0.05" end_time="20"></Akari>
 		<Akari with="yui" type="PieceFrameEffect" frame="[transparent]" start_time="0"></Akari>
@@ -137,7 +142,7 @@
 	</set>
 	
 	<!-- 向日葵と櫻子 -->
-	<set num="0">
+	<set num="1">
 		<Sakurako with="himawari" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">ああ～、勉強疲れた～。中学生やめたい～</Sakurako>
 		<Himawari with="sakurako" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[disgusted]" start_time="20" end_time="40">何言ってるんですの。中学生をやめられるはずないでしょう</Himawari>
 		<Sakurako with="himawari" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[timid]" start_time="40" end_time="60">じゃあ早く大人になりたい～</Sakurako>
@@ -145,7 +150,7 @@
 	</set>
 	
 	<!-- 千歳と綾乃 -->
-	<set num="0">
+	<set num="1">
 		<Ayano with="chitose" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">千歳～</Ayano>
 		<Chitose with="ayano" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[gone]" end_time="20">うふふふふ・・・</Chitose>
 		<Ayano with="chitose" type="Label" font="[default_font]" x="average with margin" y="average with margin" start_time="20" end_time="40">（あ～あ、また自分の世界に行っちゃってるわ、この子）</Ayano>
@@ -154,7 +159,7 @@
 	</set>
 	
 	<!-- 京子とちなつ -->
-	<set num="0">
+	<set num="1">
 		<Kyoko with="chinatsu" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[wanting to kiss]" end_time="20">ちなつちゃ～ん、ちゅっちゅー！</Kyoko>
 		<Chinatsu with="kyoko" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[refusing]" end_time="20">ちょっと、京子先輩！やめてください</Chinatsu>
 		<Kyoko with="chinatsu" type="Label + PieceFrameEffect" font="[default_font]" x="average with margin" y="average with margin" frame="[timid]" start_time="20" end_time="40">え～、ちょっとぐらいいいじゃ～ん</Kyoko>
@@ -162,7 +167,7 @@
 	</set>
 	
 	<!-- 京子とあかり -->
-	<set num="0">
+	<set num="1">
 		<Akari with="kyoko" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">＼ｱｯｶﾘ~ﾝ／</Akari>
 		<Akari with="kyoko" type="Pieces + PieceFrameEffect + FadeOutEffect" rate="0.05" frame="[transparent]" start_time="0" end_time="20"></Akari>
 		<Kyoko with="akari" type="Label" font="[default_font]" x="average with margin" y="average with margin" end_time="20">あかり～</Kyoko>

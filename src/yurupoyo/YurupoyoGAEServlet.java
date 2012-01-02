@@ -25,55 +25,6 @@ public class YurupoyoGAEServlet extends HttpServlet {
 	private static final Logger log = Logger.getLogger(YurupoyoGAEServlet.class.getName());
 	
 	@SuppressWarnings("unchecked")
-	public void doGet(HttpServletRequest req, HttpServletResponse resp)
-		throws IOException{
-		JSON json = new JSON(){
-			protected boolean ignore(Context context, Class c, Member m){
-				return(super.ignore(context, c, m) || c.getSimpleName().equals("RankingData") && m.getName().equals("getKey"));
-			}
-		};
-		json.setPropertyStyle(NamingStyle.LOWER_UNDERSCORE);
-		String header = req.getHeader("Content-Type");
-		if(!header.equals("application/json; charset=UTF-8")){
-			resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
-			return;
-		}
-		
-		PrintWriter pw = null;
-		List<RankingData> ranking = null;
-		
-		try{
-			PersistenceManager pm = PMF.get().getPersistenceManager();
-			String query_str = new String("select from " + RankingData.class.getName() + " order by score desc, key desc");
-			String ranking_str;
-			Query query = pm.newQuery(query_str);
-			try{
-				ranking = (List<RankingData>)query.execute();
-				assert(ranking.size() == 50);
-				ranking_str = json.format(ranking);
-			}finally{
-				query.closeAll();
-				pm.close();
-			}
-			
-			resp.setContentType("application/json; charset=UTF-8");
-			pw = resp.getWriter();
-			pw.print(ranking_str);
-			
-		}catch(IOException e){
-			log.log(Level.SEVERE, "an IO error occurred");
-			resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "something wrong has happened when it tries to write or read some data.");
-		}catch(JSONException e){
-			log.log(Level.SEVERE, "a JSON parse error occurred at " + e.getLineNumber() + ", " + e.getColumnNumber() + " : " + e.getMessage());
-			resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "failed to parse JSON.");
-		}finally{
-			if(pw != null){
-				pw.close();
-			}
-		}
-	}
-	
-	@SuppressWarnings("unchecked")
 	public void doPost(HttpServletRequest req, HttpServletResponse resp)
 			throws IOException {
 		JSON json = new JSON(){
@@ -173,7 +124,7 @@ public class YurupoyoGAEServlet extends HttpServlet {
 			tx.begin();
 			
 			for(int i = 0; i < 50; ++i){
-				RankingData data = new RankingData(names[i % names.length], 1000, KeyBuilderManager.instance().getNextKey());
+				RankingData data = new RankingData(names[i % names.length], 1000, false, KeyBuilderManager.instance().getNextKey());
 				initial_ranking.add(data);
 			}
 	
