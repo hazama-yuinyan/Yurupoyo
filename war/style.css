@@ -2,3 +2,8 @@ body{
 	margin: 0px;
 	background-color: rgb(235, 235, 235);
 }
+
+#copyright{
+	font: bold normal sans-serif;
+	text-decoration: underline;
+}

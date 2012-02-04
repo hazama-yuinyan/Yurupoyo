@@ -3,7 +3,8 @@
  * 
  * game.js
  *
- * Copyright (c) Ryouta Ozaki
+ * Copyright (c) HAZAMA
+ * http://funprogramming.ojaru.jp
  * Licensed under the GPL Version 3 licenses
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -997,20 +998,20 @@ var XmlManager = enchant.Class.create({
 
 var SoundManager = enchant.Class.create({
 	initialize : function(){
-		this.sounds = new Array();
 		this.sound_types = {"BANG1" : 0, "BANG2" : 1, "BANG3" : 2, "BANG4" : 3, "BANG5" : 4, "BANG6" : 5, "BANG7" : 6, "BANG8" : 7,
 				"AKKARIN" : 8, "SHINING" : 9, "VERY_SHINING" : 10};
-		this.sounds.push(Sound.load("sounds/bang1.mp3"));
-		this.sounds.push(Sound.load("sounds/bang2.mp3"));
-		this.sounds.push(Sound.load("sounds/bang3.mp3"));
-		this.sounds.push(Sound.load("sounds/bang4.mp3"));
-		this.sounds.push(Sound.load("sounds/bang5.mp3"));
-		this.sounds.push(Sound.load("sounds/bang6.mp3"));
-		this.sounds.push(Sound.load("sounds/bang7.mp3"));
-		this.sounds.push(Sound.load("sounds/bang8.mp3"));
-		this.sounds.push(Sound.load("sounds/akkarin.wav"));
-		this.sounds.push(Sound.load("sounds/shining.mp3"));
-		this.sounds.push(Sound.load("sounds/very_shining.mp3"));
+		var paths = null;
+		if(new Audio().canPlayType("audio/ogg")){
+			paths = ["sounds/bang1.ogg", "sounds/bang2.ogg", "sounds/bang3.ogg", "sounds/bang4.ogg", "sounds/bang5.ogg", "sounds/bang6.ogg",
+			         "sounds/bang7.ogg", "sounds/bang8.ogg", "sounds/akkarin.wav", "sounds/shining.ogg", "sounds/very_shining.ogg"];
+		}else{
+			paths = ["sounds/bang1.wav", "sounds/bang2.wav", "sounds/bang3.wav", "sounds/bang4.wav", "sounds/bang5.wav", "sounds/bang6.wav",
+			         "sounds/bang7.wav", "sounds/bang8.wav", "sounds/akkarin.wav", "sounds/shining.wav", "sounds/very_shining.wav"];
+		}
+		this.sounds = [];
+		paths.forEach(function(path){
+			this.sounds.push(enchant.Sound.load(path));
+		}, this);
 	},
 	
 	play : function(type){
@@ -1990,34 +1991,34 @@ var Stage = enchant.Class.create(enchant.Scene, {
 		xml_manager = new XmlManager("Effects.xml", panel.y + panel.height);	//XmlManagerの初期化
 		variable_store.addVar("panel", {"width" : panel.width, "height" : panel.height});
 		var panel_background = new enchant.Surface(panel.width, panel.height);
-		var ctx = panel_background.context;
-		ctx.fillStyle = "#ebebeb";
-		ctx.fillRect(0, 0, panel.width, panel.height);
-		ctx.strokeStyle = "rgb(0, 0, 0)";
-		ctx.beginPath();
-		ctx.moveTo(0, 0);
-		ctx.lineTo(panel.width, 0);
-		ctx.lineTo(panel.width, panel.height);
-		ctx.lineTo(0, panel.height);
-		ctx.closePath();
-		ctx.stroke();
-		if(game.is_debug){
-			(function(){
-				ctx.strokeStyle = "rgb(0, 0, 0)";
-				ctx.beginPath();
-				for(var x = panel.size_of_block.width; x < panel.width; x += panel.size_of_block.width){
-					ctx.moveTo(x, 0);
-					ctx.lineTo(x, panel.height);
-				}
-				ctx.stroke();
-				ctx.beginPath();
-				for(var y = panel.size_of_block.height; y < panel.height; y += panel.size_of_block.height){
-					ctx.moveTo(0, y);
-					ctx.lineTo(panel.width, y);
-				}
-				ctx.stroke();
-			})();
-		}
+		
+		(function(){
+			var ctx = panel_background.context;
+			ctx.fillStyle = "#ebebeb";
+			ctx.fillRect(0, 0, panel.width, panel.height);
+			ctx.strokeStyle = "rgb(0, 0, 0)";
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(panel.width, 0);
+			ctx.lineTo(panel.width, panel.height);
+			ctx.lineTo(0, panel.height);
+			ctx.closePath();
+			ctx.stroke();
+			
+			ctx.strokeStyle = "rgb(0, 0, 0)";		//パネル内にグリッドを描く
+			ctx.beginPath();
+			for(var x = panel.size_of_block.width; x < panel.width; x += panel.size_of_block.width){
+				ctx.moveTo(x, 0);
+				ctx.lineTo(x, panel.height);
+			}
+			ctx.stroke();
+			ctx.beginPath();
+			for(var y = panel.size_of_block.height; y < panel.height; y += panel.size_of_block.height){
+				ctx.moveTo(0, y);
+				ctx.lineTo(panel.width, y);
+			}
+			ctx.stroke();
+		})();
 		panel.image = panel_background;
 		this.addChild(panel.next_piece_label.next_label);
 		this.addChild(panel.score_label);
@@ -2102,13 +2103,6 @@ var Stage = enchant.Class.create(enchant.Scene, {
 });
 
 window.onload = function(){
-	if(navigator.userAgent.search("Firefox") != -1){
-		if(!confirm("あなたはFirefoxをお使いのようですが、Firefoxを使用すると音が鳴らないなど一部の機能が制限されます。\nそれでも続けますか？")){
-			location.href = "http://filesforbots.me.land.to/index.html";
-			return;
-		}
-	}
-	
 	game = new enchant.Game(480, 760);
 	game.fps = 30;
 	game.preload(['images/piece_akari.png', 'images/piece_ayano.png', 'images/piece_chinatsu.png', 'images/piece_chitose.png',

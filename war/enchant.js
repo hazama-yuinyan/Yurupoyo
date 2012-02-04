@@ -1,4 +1,4 @@
-﻿/**
+/**
  * enchant.js v0.4.1
  *
  * Copyright (c) Ubiquitous Entertainment Inc.
@@ -35,7 +35,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 if (typeof Object.defineProperty != 'function') {
     Object.defineProperty = function(obj, prop, desc) {
         if ('value' in desc) obj[prop] =  desc.value;
@@ -529,6 +528,17 @@ enchant.EventTarget = enchant.Class.create({
         }
     },
     /**
+     * すべてのイベントリスナを削除する.
+     * @param {String} type イベントのタイプ.
+     */
+    clearEventListener: function(type) {
+        if(type != null){
+            delete this._listeners[type];
+        }else{
+            this._listeners = {};
+        }
+    },
+    /**
      * イベントを発行する.
      * @param {enchant.Event} e 発行するイベント.
      */
@@ -949,6 +959,7 @@ enchant.Game = enchant.Class.create(enchant.EventTarget, {
         while (nodes.length) {
             var node = nodes.pop();
             node.dispatchEvent(e);
+            node.age ++;
             if (node.childNodes) {
                 push.apply(nodes, node.childNodes);
             }
@@ -1092,6 +1103,8 @@ enchant.Node = enchant.Class.create(enchant.EventTarget, {
         this._offsetX = 0;
         this._offsetY = 0;
 
+        this.age = 0;
+
         /**
          * Nodeの親Node.
          * @type {enchant.Group}
@@ -1215,18 +1228,18 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         this.addEventListener('touchstart', function() {
             if (!this.buttonMode) return;
             this.buttonPressed = true;
-            var e = new Event(button + 'buttondown');
+            var e = new Event(this.buttonMode + 'buttondown');
             this.dispatchEvent(e);
             game.dispatchEvent(e);
         });
         this.addEventListener('touchend', function() {
             if (!this.buttonMode) return;
             this.buttonPressed = false;
-            var e = new Event(button + 'buttonup');
+            var e = new Event(this.buttonMode + 'buttonup');
             this.dispatchEvent(e);
             game.dispatchEvent(e);
         });
-
+        
         var that = this;
         var render = function() {
             that.dispatchEvent(new enchant.Event('render'));
@@ -1527,32 +1540,36 @@ enchant.Sprite = enchant.Class.create(enchant.Entity, {
                     this._element.appendChild(image._element);
                 }
             }
-
             this._image = image;
+            this.frame = this.frame;
        }
     },
+    
     /**
      * 表示するフレームのインデックス.
      * Spriteと同じ横幅と高さを持ったフレームがimageプロパティの画像に左上から順に
      * 配列されていると見て, 0から始まるインデックスを指定することでフレームを切り替える.
      * @type {Number}
      */
+
     frame: {
         get: function() {
             return this._frame;
         },
         set: function(frame) {
             this._frame = frame;
-            var row = this._image.width / this._width | 0;
-            if (this._image._css) {
-                this._style.backgroundPosition = [
-                    -(frame % row) * this._width, 'px ',
-                    -(frame / row | 0) * this._height, 'px'
-                ].join('');
-            } else if (this._element.firstChild) {
-                var style = this._element.firstChild.style;
-                style.left = -(frame % row) * this._width + 'px';
-                style.top = -(frame / row | 0) * this._height + 'px';
+            if (this._image != null){
+                var row = this._image.width / this._width | 0;
+                if (this._image._css) {
+                    this._style.backgroundPosition = [
+                        -(frame % row) * this._width, 'px ',
+                        -(frame / row | 0) * this._height, 'px'
+                    ].join('');
+                } else if (this._element.firstChild) {
+                    var style = this._element.firstChild.style;
+                    style.left = -(frame % row) * this._width + 'px';
+                    style.top = -(frame / row | 0) * this._height + 'px';
+                }
             }
         }
     },
