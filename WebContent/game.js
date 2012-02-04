@@ -3,7 +3,8 @@
  * 
  * game.js
  *
- * Copyright (c) Ryouta Ozaki
+ * Copyright (c) HAZAMA
+ * http://funprogramming.ojaru.jp
  * Licensed under the GPL Version 3 licenses
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -235,75 +236,273 @@ Array.prototype.swapAntiClockwise = function(){
 	});
 }
 
-var GameOverScene = enchant.Class.create(enchant.Scene, {
-	initialize : function(x, y, score){
+var StartScene = enchant.Class.create(enchant.Scene, {
+	initialize : function(){
 		enchant.Scene.call(this);
 		
-		var gameover_label = new enchant.Label("GAME OVER");
-		gameover_label.font = "bold xx-large 'うずらフォント','MS ゴシック'";
-		gameover_label.x = x;
-		gameover_label.y = y;
-		setRulerStyle(" font: " + gameover_label.font);
-		gameover_label.width = gameover_label.text.getExpansion().width;
-		gameover_label.backgroundColor = "#ffffff";
-		gameover_label.color = "#ff1512";
+		this.backgroundColor = "rgba(100, 100, 100, 0.6)";
 		
-		var tweet_button = new enchant.Label("");
-		tweet_button.text = '<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://bit.ly/rLW8tO" '
-			+ 'data-counturl="http://filesforbots.me.land.to/games/Yurupoyo/index.html" data-via="hazama_akkarin" '
-			+ 'data-hashtags="yuruyuri, games" data-text="ゆるぽよで' + score + '点の記録を残したよ！" data-lang="ja">Tweet</a>';
-		tweet_button.x = x;
-		tweet_button.y = y + 50;
-		tweet_button.width = 100;
-		tweet_button.backgroundColor = "#ffffff";
+		var selected_menu_num = 0, last_selected = 0;
+		var menu_label = new enchant.Label("MENU");
+		menu_label.x = game.width / 2 - 50;
+		menu_label.y = 100;
+		menu_label.font = "normal xx-large 'うずらフォント', 'MS ゴシック'";
+		setRulerStyle(" font: " + menu_label.font);
+		menu_label.width = menu_label.text.getExpansion().width;
+		menu_label.color = "#1212fb";
+		menu_label.backgroundColor = "#ffffff";
+		this.addChild(menu_label);
 		
-		/*var ranking_str = "";
-		var user_name = "test";
-		(function requestRanking(){
-			var http_obj = new XMLHttpRequest();
-			http_obj.open("POST", "http://filesforbots.me.land.to/games/Yurupoyo/modify_ranking.php", false);
-			http_obj.send("user_name=" + user_name + "score=" + score);
-			if(http_obj.readyState == 4 && http_obj.status == 200){
-				ranking_str = http_obj.responseText;
-			}else{
-				if(confirm("httpRequestStatus:" + http_obj.status + "\nエラーが発生しました。再度スコアの送信・受信を試みますか？")){
-					requestRanking();
-				}else{
-					return;
+		var explain_label = new enchant.Label("スペースキーまたはタッチでモード選択ができます");
+		explain_label.x = 0;
+		explain_label.y = 350;
+		explain_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
+		setRulerStyle(" font: " + explain_label.font);
+		explain_label.width = game.width;
+		explain_label.backgroundColor = "#ffffff";
+		this.addChild(explain_label);
+		
+		this.mode_labels = new Array();
+		var slow_mode_label = new enchant.Label("ゆったりモード");
+		slow_mode_label.x = game.width / 2 - 90;
+		slow_mode_label.y = 200;
+		slow_mode_label.color = ColorTable[PieceTypes.AKARI];
+		slow_mode_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
+		slow_mode_label.width = slow_mode_label.text.getExpansion().width;
+		slow_mode_label.backgroundColor = "#ffffff";
+		this.mode_labels.push(slow_mode_label);
+		this.addChild(this.mode_labels[0]);
+
+		var fast_mode_label = new enchant.Label("サバイバルモード");
+		fast_mode_label.x = game.width / 2 - 90;
+		fast_mode_label.y = 250;
+		fast_mode_label.color = "#000000";
+		fast_mode_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
+		fast_mode_label.width = fast_mode_label.text.getExpansion().width;
+		fast_mode_label.backgroundColor = "#ffffff";
+		this.mode_labels.push(fast_mode_label);
+		this.addChild(this.mode_labels[1]);
+		
+		function isInArea(x, y, obj){
+			return(obj.x <= x && x <= obj.x + obj.width && obj.y <= y && y <= obj.y + obj._element.clientHeight);
+		}
+		
+		this.addEventListener('enterframe', function(){
+			if(game.input.up){
+				selected_menu_num = (selected_menu_num + 2 - 1) % 2;
+				game.input['up'] = false;
+			}else if(game.input.down){
+				selected_menu_num = (selected_menu_num + 1) % 2;
+				game.input['down'] = false;
+			}else if(game.input.a){
+				game.is_survival = (selected_menu_num == 1);
+				game.popScene();
+				game.input['a'] = false;
+			}
+			
+			if(selected_menu_num != last_selected){
+				this.mode_labels[last_selected].color = "#000000";
+				this.mode_labels[selected_menu_num].color = ColorTable[PieceTypes.AKARI];
+				last_selected = selected_menu_num;
+			}
+		});
+		
+		var touched = false, prev_touched_frame = 0;
+		this.addEventListener('touchstart', function(e){
+			if(isInArea(e.x, e.y, this.mode_labels[0]) || isInArea(e.x, e.y, this.mode_labels[1])){
+				touched = true;
+				prev_touched_frame = game.frame;
+			}
+		});
+		
+		this.addEventListener('touchend', function(e){
+			if(touched && game.frame - prev_touched_frame <= 20){
+				if(isInArea(e.x, e.y, this.mode_labels[0])){
+					selected_menu_num = 0;
+				}else if(isInArea(e.x, e.y, this.mode_labels[1])){
+					selected_menu_num = 1;
+				}
+				
+				if(selected_menu_num == last_selected){
+					game.is_survival = (selected_menu_num == 1);
+					game.popScene();
 				}
 			}
-		})();
+		});
+	}
+});
+
+var GameOverScene = enchant.Class.create(enchant.Scene, {
+	initialize : function(x, y, score, panel_width, panel_height){
+		enchant.Scene.call(this);
 		
-		ranking_str.replace("\n", "<br>");
-		var ranking_label = new enchant.Label(ranking_str);*/
+		var scene = this;
+		this.backgroundColor = "rgba(100, 100, 100, 0.6)";
 		
-		(function(d,s,id){
-    		var js,fjs=d.getElementsByTagName(s)[0];
-    		if(!d.getElementById(id)){
-    			js=d.createElement(s);
-    			js.id=id;
-    			js.src="https://platform.twitter.com/widgets.js";
-    			fjs.parentNode.insertBefore(js,fjs);
-    		}
-    	})(document,"script","twitter-wjs");
+		var explain_label = new enchant.Label("スペースキーを押すか画面をタッチ・クリックするとメニューに戻ります");
+		explain_label.x = 0;
+		explain_label.y = (y + 100) + panel_height / 2 + 40;
+		explain_label.width = game.width;
+		explain_label.font = "normal large 'うずらフォント', 'MS ゴシック'";
+		explain_label.backgroundColor = "#ffffff";
+		this.addChild(explain_label);
 		
-		this.addChild(gameover_label);
-		this.addChild(tweet_button);
+		var tweet_button = new enchant.Label("");
+		tweet_button.x = x;
+		tweet_button.y = y + 50;
+		tweet_button.width = 120;
+		tweet_button.backgroundColor = "#ffffff";
+		
+		var ranking_label = new enchant.Label("");
+		ranking_label.x = 0;
+		ranking_label.y = y + 100;
+		ranking_label.width = game.width;
+		ranking_label.backgroundColor = "#ffffff";
+		
+		var ranking_list = document.createElement("div");
+		ranking_list.setAttribute("style", "height: " + panel_height / 2 + "px; border: inset 5px #ff1012; overflow: hidden");
+		ranking_list.setAttribute("id", "ranking");
+		var ranking_title = document.createElement("p");
+		ranking_title.setAttribute("style", "text-align: center; font: bold large 'うずらフォント', 'MS ゴシック'");
+		ranking_title.textContent = "RANKING";
+		ranking_list.appendChild(ranking_title);
+		ranking_list.appendChild(document.createElement("br"));
+		var user_name = prompt("ランキングに掲載するハンドルネームを入れてください。", "あかり");
+		if(user_name){
+			var http_obj = new XMLHttpRequest();
+			http_obj.open("post", "/yurupoyogae", true);
+			http_obj.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+			http_obj.onreadystatechange = function recieve_ranking(){
+				if(this.readyState == 4 && this.status == 200 && this.getResponseHeader("Content-Type").search("application/json; charset=UTF-8") != -1){
+					var json_obj = JSON.parse(this.responseText);
+					
+					var tag_text = '<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://bit.ly/vg3MHc" '
+						+ 'data-counturl="http://yurupoyo.appspot.com/" data-via="hazama_akkarin" '
+						+ 'data-hashtags="yuruyuri, games" data-text="';
+					var text = "ゆるぽよで" + score + "点を獲得し";
+					
+					var is_found = false;
+					json_obj.forEach(function(obj, index){
+						var line = document.createElement("span");
+						var is_survival = (obj.survival) ? "（サバイバル）" : "（ゆったり）";
+						line.textContent = (index + 1) + " " + obj.user_name + " " + obj.score + " " + is_survival;
+						var style;
+						if(!is_found && obj.user_name.search(user_name.replace(/[\(\)\$\[\]\.\?\*\+\^\!\{\}\\\|\/]/g, "\\$&")) != -1 
+								&& obj.score == score){
+							style = "color: #ff1012; font: bold large 'うずらフォント'";
+							text += "て" + (index + 1) + "位になったよ！";
+							is_found = true;
+						}else{
+							style = "color: #000000; font: italic large 'うずらフォント'";
+						}
+						line.setAttribute("style", style);
+						ranking_list.appendChild(line);
+						ranking_list.appendChild(document.createElement("br"));
+					});
+					
+					if(!is_found){
+						var new_span = document.createElement("span");
+						new_span.textContent = "ランク外 " + user_name + " " + score;
+						new_span.setAttribute("style", "color: #000000; font: bold large 'うずらフォント'");
+						ranking_label._element.appendChild(new_span);
+						
+						text += "たけど残念ながらランク外でした・・・";
+					}
+					
+					tag_text += text + '" data-lang="ja">Tweet</a>';
+					tweet_button.text = tag_text;
+					ranking_label._element.appendChild(ranking_list);
+					
+					(function(d,s,id){
+			    		var js,fjs=d.getElementsByTagName(s)[0];
+			    		if(!d.getElementById(id)){
+			    			js=d.createElement(s);
+			    			js.id=id;
+			    			js.src="https://platform.twitter.com/widgets.js";
+			    			fjs.parentNode.insertBefore(js,fjs);
+			    		}
+			    	})(document,"script","twitter-wjs");
+					
+					scene.addChild(tweet_button);
+					scene.addChild(ranking_label);
+					
+					http_obj = null;
+				}else if(this.readyState == 4){
+					alert("エラーが発生しました。\n" + http_obj.responseText);
+					if(confirm("再度ランキングの取得を試みますか？")){
+						http_obj = new XMLHttpRequest();
+						http_obj.open((this.status == 202) ? "get" : "post", "/yurupoyogae", true);
+						http_obj.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+						http_obj.onreadystatechange = recieve_ranking;
+						http_obj.send((this.status == 202) ? null : 
+							'{"user_name":"' + user_name + '","score":' + score + ', "survival":' + game.is_survival + '}');
+					}else{
+						var new_elem = document.createElement("div");
+						new_elem.textContent = "ランキングの取得に失敗しました";
+						new_elem.setAttribute("style", "text-align:center; color: #ff1012; font: bold x-large 'うずらフォント'; width: " 
+								+ panel_width + "px");
+						ranking_label._element.appendChild(new_elem);
+						scene.addChild(ranking_label);
+					}
+				}
+			}
+			http_obj.send('{"user_name":"' + user_name + '","score":' + score + ', "survival":' + game.is_survival + '}');
+		}
+		
 		this.addEventListener('enterframe', function(){
+			var ranking_tag = document.getElementById("ranking");
+			if(ranking_tag != null){
+				if(ranking_tag.scrollTop != ranking_tag.scrollHeight - ranking_tag.clientHeight){
+					++ranking_tag.scrollTop;	//ランキングを少しずつスクロールさせる
+				}else{
+					ranking_tag.scrollTop = 0;
+				}
+			}
+			
 			if(game.input.a){
 				var stage = new Stage();
+				var menu = new StartScene();
 				game.popScene();
 				game.popScene();
 				game.pushScene(stage);
+				game.pushScene(menu);
 				game.input['a'] = false;
+			}
+		});
+		
+		var touched = false, prev_touched_frame = 0;
+		this.addEventListener('touchstart', function(){
+			prev_touched_frame = game.frame;
+			touched = true;
+		});
+		
+		this.addEventListener('touchend', function(){
+			if(touched){
+				if(game.frame - prev_touched_frame <= 20){
+					game.input["a"] = true;
+				}else{
+					game.input['a'] = false;
+				}
+				
+				touched = false;
 			}
 		});
 	}
 });
 
 var PauseScene = enchant.Class.create(enchant.Scene, {
-	initialize : function(x, y){
+	initialize : function(x, y, panel_width){
 		enchant.Scene.call(this);
+		
+		this.backgroundColor = "rgba(100, 100, 100, 0.6)";
+		
+		var explain_label = new enchant.Label("矢印キー上、またはクリック・タッチでゲームを再開します");
+		explain_label.x = x;
+		explain_label.y = y + 40;
+		explain_label.font = "bold large 'うずらフォント', 'MS ゴシック'";
+		explain_label.width = panel_width / 2;
+		explain_label.backgroundColor = "#ffffff";
+		explain_label.color = "#000000";
 		
 		var pause_label = new enchant.Label("PAUSED");
 		pause_label.font = "bold xx-large 'うずらフォント','MS ゴシック'";
@@ -313,7 +512,22 @@ var PauseScene = enchant.Class.create(enchant.Scene, {
 		pause_label.width = pause_label.text.getExpansion().width;
 		pause_label.backgroundColor = "#ffffff";
 		pause_label.color = "#ff1512";
+		
+		this.addChild(explain_label);
 		this.addChild(pause_label);
+		
+		var touched = false;
+		this.addEventListener('touchstart', function(){
+			touched = true;
+		});
+		
+		this.addEventListener('touchend', function(){
+			if(touched && !game.input.up){
+				game.input["up"] = true;
+				touched = false;
+			}
+		});
+		
 		this.addEventListener('enterframe', function(){
 			if(game.input.up){		//upボタンを押されたらポーズシーンを抜ける
 				game.popScene();
@@ -330,7 +544,7 @@ var Score = enchant.Class.create(enchant.Label, {
 		this.x = 0;
 		this.y = 0;
 		this.font = "bold xx-large 'うずらフォント','MS ゴシック'";
-		this.backgroundColor = "#ffffff";
+		this.backgroundColor = "#ebebeb";
 		this.color = "#ff1512";
 		this.score = 0;
 	},
@@ -354,7 +568,7 @@ var NextPieceLabel = enchant.Class.create({
 		this.piece_up_left_pos = {"x" : x + 16, "y" : y + 50};
 		this.next_label = new enchant.Label("NEXT");
 		this.next_label.font = "bold xx-large 'うずらフォント','MS ゴシック'";
-		this.next_label.backgroundColor = "#ffffff";
+		this.next_label.backgroundColor = "#ebebeb";
 		this.next_label.color = "#000000";
 		this.next_label.x = 25;
 		this.next_label.y = this.y;
@@ -538,50 +752,21 @@ var Piece = enchant.Class.create(enchant.Sprite, {
 	}
 });
 
-var ExpressionEvaluator = enchant.Class.create({
-	initialize : function(val1, val2){
-		this.value1 = val1;
-		this.value2 = val2;
-	},
-	
-	execute : function(operator_type){
-		switch(operator_type){
-		case 0:
-			return(this.value1 == this.value2);
-			break;
-			
-		case 1:
-			return(this.value1 < this.value2);
-			break;
-			
-		case 2:
-			return(this.value1 > this.value2);
-			break;
-			
-		case 3:
-			return(this.value1 <= this.value2);
-			break;
-			
-		case 4:
-			return(this.value1 >= this.value2);
-			break;
-		}
-		
-		return false;
-	}
-});
-
 var XmlManager = enchant.Class.create({
-	initialize : function(url, panel_height){
+	initialize : function(url, panel_bottom){
 		var http_obj = new XMLHttpRequest();
 		var effects_definitions = new Array();
 		var presets = new Array();
 		var max_nums = new Array();
-		this.average_coords = 0;
-		this.now = new Date();
+		var expr_evaluator = new ExpressionEvaluator();
+		variable_store = new VarStore();
 		this.pieces = null;
-		this.targets = null;
-		this.panel_height = panel_height;
+		this.average_coords = 0;
+		var now = new Date();
+		variable_store.addVar("now", {"year" : now.getFullYear(), "month" : now.getMonth() + 1, "date" : now.getDate(), "day" : now.getDay(),
+			"hour" : now.getHours()});
+		this.days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+		this.panel_bottom = panel_bottom;
 		
 		http_obj.onload = function(){
 			var squeezeValues = function(elem){
@@ -614,7 +799,7 @@ var XmlManager = enchant.Class.create({
 						if(enable_if != undefined && obj['enable_if'] == undefined){obj['enable_if'] = enable_if;}
 						effects_definitions.push(obj);
 					}
-					if(child.nextElementSibling == null || child.nextElementSibling.getAttribute("num") == 0){
+					if(child.nextElementSibling == null || child.nextElementSibling.getAttribute("num") == 1){
 						max_nums.push({"key" : (obj['with'] != undefined) ? obj.name + " with " + obj['with'] : obj.name, "num" : num});
 						if(obj['with'] != undefined){
 							max_nums.push({"key" : obj['with'] + " with " + obj.name, "num" : num});
@@ -626,7 +811,7 @@ var XmlManager = enchant.Class.create({
 					obj['text'] = child.textContent;
 					obj['name'] = child.tagName.toLowerCase();
 					effects_definitions.push(obj);
-					if(child.nextElementSibling == null || child.nextElementSibling.getAttribute("num") == 0){
+					if(child.nextElementSibling == null || child.nextElementSibling.getAttribute("num") == 1){
 						max_nums.push({"key" : obj.name, "num" : num});
 					}
 				}
@@ -636,8 +821,7 @@ var XmlManager = enchant.Class.create({
 		http_obj.open("get", url, false);
 		http_obj.send(null);
 		
-		this.getDefinitions = function(tag_name, target){
-			var name = tag_name;
+		this.getDefinitions = function(name, target){
 			if(target != undefined){
 				var results = effects_definitions.filter(function(definition){
 					return(definition.name == name && definition['with'] == target);
@@ -658,7 +842,7 @@ var XmlManager = enchant.Class.create({
 		
 		this.getMaxNum = function(effect_name, target){
 			var searching_str = (target != undefined) ? effect_name + " with " + target : effect_name;
-			var result = -1;
+			var result = 1;
 			max_nums.every(function(obj){
 				if(obj.key == searching_str){
 					result = obj.num + 1;	//乱数で使うため実際に出現する数より1多く返す
@@ -683,6 +867,14 @@ var XmlManager = enchant.Class.create({
 			});
 			
 			return preset;
+		}
+		
+		this.verifyAvailability = function(condition){
+			if(condition == undefined){return true;}
+			this.days.forEach(function(day, index){
+				condition = condition.replace(day, index);
+			});
+			return expr_evaluator.eval(condition.replace(/&lt;/g, "<").replace(/&gt;/g, ">"));
 		}
 	},
 	
@@ -713,7 +905,7 @@ var XmlManager = enchant.Class.create({
 			return Math.floor(this.average_coords.y);
 		}else if(val == "average with margin"){
 			return (this.average_coords.y + height > game.height) ? game.height - height : 
-				(this.average_coords.y >= (this.x + this.panel_height) / 2) ? this.average_coords.y - height : this.average_coords.y + height;
+				(this.average_coords.y >= this.panel_bottom / 2) ? this.average_coords.y - height : this.average_coords.y + height;
 		}
 		
 		return val;
@@ -746,31 +938,9 @@ var XmlManager = enchant.Class.create({
 		return result;
 	},
 	
-	/*verifyAvailability : function(condition){
-		if(condition == undefined){return true;}
-		
-		var exprs = condition.split(/and|or (?!equal|less|more)/);
-		var variables = ["piece1.x", "piece1.y", "piece2.x", "piece2.y", "now."]
-		var operators = [/equal to/, /less than/, /more than/, /equal|less or less|equal/, /equal|more or more|equal/];
-		exprs.forEach(function(expr){
-			var operator_type = -1, operator_pos;
-			operators.every(function(operator, cur_index){
-				if(operator_pos = expr.search(operator) != -1){
-					operator_type = cur_index;
-					return false;
-				}
-				
-				return true;
-			});
-			
-			
-		});
-	},*/
-	
 	interpret : function(definition, infos){
 		var types = definition.type.split(/\s*\+\s*/);
 		var last_label = null, results = new Array();
-		//if(!this.verifyAvailability(definition.enable_if)){return results;}
 		
 		types.forEach(function(type){
 			switch(type){
@@ -781,8 +951,6 @@ var XmlManager = enchant.Class.create({
 				setRulerStyle(" font: " + font);
 				var text = definition.text.slice(0), num_lines = {"val" : 1};
 				if(infos != undefined){text = text.fitInWidth(infos.width, num_lines);}
-				//var width = (infos != undefined) ? infos.width : 160;
-				//setRulerStyle(" font: " + font + "width: " + width);
 				var size = text.getExpansion();
 				position.x = (infos != undefined) ? infos.x : this.interpretX(definition.x, size.width);
 				position.y = this.interpretY(definition.y, size.height * num_lines.val);
@@ -790,6 +958,7 @@ var XmlManager = enchant.Class.create({
 				last_label = this.createNewLabel(font, position.x, position.y, (infos != undefined && size.width >= infos.width) 
 						? infos.width : size.width, text, definition.background_color, this.interpretColor(definition.color, definition.name));
 				label_manager.add(last_label, game.frame + definition.start_time, game.frame + definition.end_time);
+				results.push(new Effect(0, 0, true));
 				break;
 				
 			case "PieceFrameEffect":
@@ -829,20 +998,20 @@ var XmlManager = enchant.Class.create({
 
 var SoundManager = enchant.Class.create({
 	initialize : function(){
-		this.sounds = new Array();
 		this.sound_types = {"BANG1" : 0, "BANG2" : 1, "BANG3" : 2, "BANG4" : 3, "BANG5" : 4, "BANG6" : 5, "BANG7" : 6, "BANG8" : 7,
 				"AKKARIN" : 8, "SHINING" : 9, "VERY_SHINING" : 10};
-		this.sounds.push(Sound.load("sounds/bang1.mp3"));
-		this.sounds.push(Sound.load("sounds/bang2.mp3"));
-		this.sounds.push(Sound.load("sounds/bang3.mp3"));
-		this.sounds.push(Sound.load("sounds/bang4.mp3"));
-		this.sounds.push(Sound.load("sounds/bang5.mp3"));
-		this.sounds.push(Sound.load("sounds/bang6.mp3"));
-		this.sounds.push(Sound.load("sounds/bang7.mp3"));
-		this.sounds.push(Sound.load("sounds/bang8.mp3"));
-		this.sounds.push(Sound.load("sounds/akkarin.wav"));
-		this.sounds.push(Sound.load("sounds/shining.mp3"));
-		this.sounds.push(Sound.load("sounds/very_shining.mp3"));
+		var paths = null;
+		if(new Audio().canPlayType("audio/ogg")){
+			paths = ["sounds/bang1.ogg", "sounds/bang2.ogg", "sounds/bang3.ogg", "sounds/bang4.ogg", "sounds/bang5.ogg", "sounds/bang6.ogg",
+			         "sounds/bang7.ogg", "sounds/bang8.ogg", "sounds/akkarin.wav", "sounds/shining.ogg", "sounds/very_shining.ogg"];
+		}else{
+			paths = ["sounds/bang1.wav", "sounds/bang2.wav", "sounds/bang3.wav", "sounds/bang4.wav", "sounds/bang5.wav", "sounds/bang6.wav",
+			         "sounds/bang7.wav", "sounds/bang8.wav", "sounds/akkarin.wav", "sounds/shining.wav", "sounds/very_shining.wav"];
+		}
+		this.sounds = [];
+		paths.forEach(function(path){
+			this.sounds.push(enchant.Sound.load(path));
+		}, this);
 	},
 	
 	play : function(type){
@@ -929,9 +1098,11 @@ var EffectManager = enchant.Class.create({
  * end_timeにPOSITIVE_INFINITYをセットすると、明示的にEffectManagerのremoveEffectを呼び出して削除しなければ、そのエフェクトはいつまでも効果が持続することになる
  */
 var Effect = enchant.Class.create({
-	initialize : function(time_to_end_affecting, time_to_start_affecting){
+	initialize : function(time_to_end_affecting, time_to_start_affecting, is_dummy){
 		this.start_time = (isNaN(time_to_start_affecting)) ? 0 : time_to_start_affecting;
 		this.end_time = time_to_end_affecting;
+		var is_dummy = (is_dummy != undefined) ? is_dummy : false;
+		this.isDummy = function(){return is_dummy;}
 	}
 });
 
@@ -1060,14 +1231,10 @@ var SoundEffect = enchant.Class.create(Effect, {
 });
 
 var PiecesEffect = enchant.Class.create(Effect, {
-	initialize : function(pieces, targets, score, num_successive_disappearance, average_coords, section_x, section_width){
+	initialize : function(pieces, targets, score, num_successive_disappearance, average_coords, selected_effects){
 		Effect.call(this, 0);
 		
 		this.sub_effects = new Array();
-		
-		xml_manager.pieces = pieces;
-		xml_manager.targets = targets;
-		xml_manager.average_coords = average_coords;
 		
 		var effects = new Array();
 		effects.push({"type" : "Label", "font" : "large 'うずらフォント', 'MS ゴシック'", "x" : Math.floor(average_coords.x - 50),
@@ -1078,20 +1245,14 @@ var PiecesEffect = enchant.Class.create(Effect, {
 			"y" : Math.floor(average_coords.y - 40), "text" : num_successive_disappearance + "COMBO!", "end_time" : 30,
 			"background_color" : "#ffffff", "color" : ColorTable[num_successive_disappearance % PieceTypes.MAX], "num" : -1});
 		
-		var piece_type = getPropertyName(PieceTypes, pieces[0].type)
-		, target_type = getPropertyName(PieceTypes, (targets != undefined) ? targets[0].type : undefined);
-		effects = effects.concat(xml_manager.getDefinitions(piece_type, target_type));
-		var selected_effect_num = mersenne.nextInt(xml_manager.getMaxNum(piece_type, target_type));
-		var selected_effects = effects.mapWithArray(function(definition, cur_index){
-			return (definition.num != selected_effect_num && definition.num != -1) ? new Array() : 
-				   (section_x == undefined || cur_index < 2) ? xml_manager.interpret(definition) : 
-					   xml_manager.interpret(definition, {"x" : section_x, "width" : section_width});
-		});
+		selected_effects = selected_effects.concat(effects.mapWithArray(function(definition){
+			return xml_manager.interpret(definition);
+		}));
 		
 		var end_time = 0;
 		this.sub_effects = selected_effects.filter(function(effect){
-			if(effect != null){end_time = Math.max(end_time, effect.end_time);}		//sub_effectsの中からend_timeの最大値を算出する
-			return(effect != null);
+			end_time = Math.max(end_time, effect.end_time);		//selected_effectsの中からend_timeの最大値を算出する
+			return !effect.isDummy();
 		});
 		
 		this.end_time = end_time;
@@ -1126,6 +1287,7 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		this.moving_pieces = new Array();	//前フレームから移動したピース
 		this.is_ready_for_next_piece = true;	//次のピースを出現させるかどうか	
 		this.pieces_moving_rate = 30;	//現在のピースが1ます分落下する頻度
+		this.next_speed_up_score = 10000;	//サバイバルモードで次にピースの落下速度が上がる得点
 		this.cur_falling_pieces = null;	//現在プレイヤーが操作しているシェイプの情報
 		this.size_of_block = {"width" : 32, "height" : 32};						//1ますのサイズ
 		this.next_appearing_pieces = {"pieces" : null, "width" : 0, "height" : 0};		//次に出現するシェイプの情報
@@ -1135,22 +1297,59 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		this.is_in_normal_state = true;								//ピースを消す処理が終わって普通の処理ルーチンに戻ってもいいかどうか
 		this.score_label = new Score();								//スコアを画面に表示するラベル
 		this.num_successive_disappearance = 1;						//現在の連鎖の数
+		this.selected_effect_num = -1;
 		this.effect_manager = new EffectManager();					//エフェクトマネージャー
-		this.manual_button = new enchant.Label('<a href="manual.html" target="_blank">MANUAL</a>');			//マニュアルを表示するボタン
-		this.manual_button.x = 20;
-		this.manual_button.y = this.height - 100;
+		this.home_button = new enchant.Label('<a href="http://filesforbots.me.land.to/index.html"  target="_blank"'
+				+ ' style="border: outset 5px #aaaaaa; border-radius: 30px;'
+				+ ' color: #000000; background-color: #aaaaaa; box-shadow: 2px 2px 1px #bbbcbc; text-decoration: none;'
+				+ 'background: -moz-linear-gradient(top, #fff, #F1F1F1 1%, #F1F1F1 50%, #DFDFDF 99%, #ccc);'  
+			    + 'background: -webkit-gradient(linear, left top, left bottom, from(#fff), color-stop(0.01, #F1F1F1),'
+			    + 'color-stop(0.5, #F1F1F1), color-stop(0.99, #DFDFDF), to(#ccc));">HOME</a>');	//ホームに戻るリンクボタン
+		this.home_button.x = 0;
+		this.home_button.y = this.y + (this.height - 10);
+		this.home_button.width = this.x / 2;
+		this.manual_button = new enchant.Label('<a href="manual.html" target="_blank" style="border: outset 5px #aaaaaa; border-radius: 30px;'
+				+ ' color: #000000; background-color: #aaaaaa; box-shadow: 2px 2px 1px #bbbcbc; text-decoration: none;'
+				+ 'background: -moz-linear-gradient(top, #fff, #F1F1F1 1%, #F1F1F1 50%, #DFDFDF 99%, #ccc);'  
+			    + 'background: -webkit-gradient(linear, left top, left bottom, from(#fff), color-stop(0.01, #F1F1F1),'
+			    + 'color-stop(0.5, #F1F1F1), color-stop(0.99, #DFDFDF), to(#ccc));">MANUAL</a>');			//マニュアルを表示するボタン
+		this.manual_button.x = this.x / 2;
+		this.manual_button.y = this.y + (this.height - 10);
 		this.manual_button.width = this.x / 2;
 		
-		/*manaul_button.touched = false;
-		manual_button.addEventListener('touchstart', function(){
-			this.touched = this.touched || true;
-		});
+		var TOUCH_ENABLED = (function() {
+		    var div = document.createElement('div');
+		    div.setAttribute('ontouchstart', 'return');
+		    return typeof div.ontouchstart == 'function';
+		})();
 		
-		manual_button.addEventListener('touchend', function(){
-			if(this.touched){
-				
-			}
-		});*/
+		var platform_num = (TOUCH_ENABLED) ? 1 : 0;
+		var texts = [["PC", "スマートフォン"],
+		             ["矢印キー右、またはマウスで右にドラッグ", "ピースを右にドラッグ"],
+		             ["矢印キー左、またはマウスで左にドラッグ", "ピースを左にドラッグ"],
+		             ["矢印キー下、またはピースの中心軸より右側で真下にドラッグするか左側で真上にドラッグする", "中心軸より右側なら真下、左側なら真上にドラッグ"],
+		             ["矢印キー上、または時計回りに回転と逆の動作をマウスでする", "時計回りに回転と逆の動作"],
+		             ["スペースキー、またはピースをクリックする", "ピースをタッチする"],
+		             ["Pキー、またはSCOREのあたりをクリック", "SCOREのあたりをタッチ"]];
+		this.quick_reference = new enchant.Label(['<table>',
+	    		'<caption>クイックリファレンス</caption>',
+	    		'<colgroup span="1" style="width:33.3%; font: normal small \'うずらフォント\', \'MS ゴシック\'">',
+	    		'<colgroup span="1" style="width:66.6%; font: normal small \'うずらフォント\', \'MS ゴシック\'">',
+	    		'<thead>',
+	    		'	<tr><th>操作内容</th><th>', texts[0][platform_num], '</th></tr>',
+	    		'</thead>',
+	    		'<tbody>',
+	    		'	<tr><td>右に移動</td><td>', texts[1][platform_num], '</td></tr>',
+	    		'	<tr><td>左に移動</td><td>', texts[2][platform_num], '</td></tr>',
+	    		'	<tr><td>時計回りに回転</td><td>', texts[3][platform_num], '</td></tr>',
+	    		'	<tr><td>反時計回りに回転</td><td>', texts[4][platform_num], '</td>></tr>',
+	    		'	<tr><td>ピースを着地させる</td><td>', texts[5][platform_num], '</td></tr>',
+	    		'	<tr><td>ポーズ</td><td>', texts[6][platform_num], '</td></tr>',
+	    		'</tbody>',
+	    	'</table>'].join(""));
+		this.quick_reference.x = 0;
+		this.quick_reference.y = this.y + this.height / 3;
+		this.quick_reference.width = this.x;
 		
 		this.shapes = {"shapes" : [
 			           [new Piece(32, 32, this), null, null, null,
@@ -1303,8 +1502,9 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 				this.is_ready_for_next_piece = true;
 				game.input["a"] = false;
 			}else if(game.input.b){			//Bボタンを押されたらポーズする
-				var pause_scene = new PauseScene((this.x + this.width) / 2, (this.y + this.height) / 2);
+				var pause_scene = new PauseScene((this.x + this.width) / 2, (this.y + this.height) / 2, this.width);
 				game.pushScene(pause_scene);
+				game.input["b"] = false;
 			}
 		}
 	},
@@ -1320,12 +1520,13 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 			piece.setCoords();
 		}, this);
 		
-		this.cur_falling_pieces.pieces.forEach(function(piece, index, array){
+		this.cur_falling_pieces.pieces.every(function(piece, index, array){
 			if(!piece.tryToMove(0, 1)){	//自分の下1ますが空いているかどうか確かめる
 				if(piece.position.y <= 2){		//上から数えて3段目までピースがたまってしまっていたら、ゲームオーバー
-					var gameover_scene = new GameOverScene((this.x + this.width) / 2, this.y + 10, this.score_label.getScore());
+					var gameover_scene = new GameOverScene((this.x + this.width) / 2, this.y + 10, this.score_label.getScore()
+							, this.width, this.height);
 					game.pushScene(gameover_scene);
-					return;
+					return false;
 				}
 				
 				piece.position.y = Math.round(piece.position.y);
@@ -1350,6 +1551,8 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 				
 				this.is_ready_for_next_piece = true;
 			}
+			
+			return true;
 		}, this);
 	},
 	
@@ -1421,6 +1624,10 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 			}, this);
 			
 			this.disappearing_pieces.splice(0);
+			if(game.is_survival && this.score_label.getScore() >= this.next_speed_up_score && this.pieces_moving_rate > 10){
+				this.pieces_moving_rate -= 4;
+				this.next_speed_up_score = this.score_label.getScore() + 10000;
+			}
 			this.is_in_normal_state = true;
 			this.is_ready_for_next_piece = true;
 		}
@@ -1504,8 +1711,11 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 				var score_diff = 100 * Math.pow(2, this.num_successive_disappearance) * group.length;
 				this.score_label.addScore(score_diff);	//スコアを追加する
 				var average_coords = this.calcPiecesAverageCoordinates(group);
+				variable_store.addVar(getPropertyName(PieceTypes, group[0].type), average_coords);
+				variable_store.addVar("score", this.score_label.getScore());
+				var selected_effects = this.chooseAppropriateEffects(group, undefined, average_coords);
 				this.effect_manager.addEffect(new PiecesEffect(group.slice(0), undefined, score_diff, this.num_successive_disappearance
-						, average_coords));
+						, average_coords, selected_effects));
 				if(game.is_debug){console.log("score added! "+score_diff+"points added!");}
 				sound_manager.play(this.num_successive_disappearance % 8 - 1);
 				this.is_in_normal_state = false;
@@ -1557,10 +1767,15 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 					var average_coords = this.calcPiecesAverageCoordinates(pieces), average_coords2 = this.calcPiecesAverageCoordinates(targets);
 					var section_x = (average_coords.x < average_coords2.x) ? this.x : this.x + this.width / 2;
 					var section_x2 = (average_coords.x < average_coords2.x) ? this.x + this.width / 2 : this.x;
+					variable_store.addVar(getPropertyName(PieceTypes, pieces[0].type), average_coords);
+					variable_store.addVar(getPropertyName(PieceTypes, targets[0].type), average_coords2);
+					variable_store.addVar("score", this.score_label.getScore());
+					var selected_effects1 = this.chooseAppropriateEffects(pieces, targets, average_coords, section_x, this.width / 2);
+					var selected_effects2 = this.chooseAppropriateEffects(targets, pieces, average_coords2, section_x2, this.width / 2);
 					this.effect_manager.addEffect(new PiecesEffect(pieces, targets, score_diff / 2, this.num_successive_disappearance
-							, average_coords, section_x, this.width / 2));	//それぞれのグループのピースの種類に対応するエフェクトを追加する
+							, average_coords, selected_effects1));	//それぞれのグループのピースの種類に対応するエフェクトを追加する
 					this.effect_manager.addEffect(new PiecesEffect(targets, pieces, score_diff / 2, this.num_successive_disappearance
-							, average_coords2, section_x2, this.width / 2));
+							, average_coords2, selected_effects2));
 					if(game.is_debug){console.log("score added! "+score_diff+"points added!");}
 					sound_manager.play(this.num_successive_disappearance % 8 - 1);
 					this.is_in_normal_state = false;
@@ -1576,6 +1791,39 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		}
 		
 		this.candidates_for_disappearing_pieces.splice(0);
+	},
+	
+	/**
+	 * 自分と相手のピースの種類に合わせたエフェクトを選択する
+	 */
+	chooseAppropriateEffects : function(pieces, targets, average_coords, section_x, section_width){
+		xml_manager.pieces = pieces;
+		xml_manager.average_coords = average_coords;
+		
+		var piece_type = getPropertyName(PieceTypes, pieces[0].type)
+		, target_type = getPropertyName(PieceTypes, (targets != undefined) ? targets[0].type : undefined);
+		var effects = xml_manager.getDefinitions(piece_type, target_type), selected_effects;
+		if(this.selected_effect_num == -1){
+			do{
+				var max_num = xml_manager.getMaxNum(piece_type, target_type);
+				this.selected_effect_num = (max_num == 1) ? 0 : mersenne.nextInt(1, max_num);
+				selected_effects = effects.mapWithArray(function(definition){
+					return ((definition.num == -1 || definition.num == this.selected_effect_num) && xml_manager.verifyAvailability(definition.enable_if)) 
+					? (section_x == undefined) ? xml_manager.interpret(definition) : 
+						xml_manager.interpret(definition, {"x" : section_x, "width" : section_width}) : new Array();
+				}, this);
+			}while(selected_effects.length == 0 && this.selected_effect_num != 0);
+		}else{
+			var selected_effects = effects.mapWithArray(function(definition){
+				return ((definition.num == -1 || definition.num == this.selected_effect_num) && xml_manager.verifyAvailability(definition.enable_if)) 
+				? (section_x == undefined) ? xml_manager.interpret(definition) : 
+					xml_manager.interpret(definition, {"x" : section_x, "width" : section_width}) : new Array();
+			}, this);
+			this.selected_effect_num = -1;
+		}
+		
+		if(targets == undefined){this.selected_effect_num = -1;}
+		return selected_effects;
 	},
 	
 	/**
@@ -1740,39 +1988,42 @@ var Stage = enchant.Class.create(enchant.Scene, {
 		
 		var panel = new Panel(32 * NUM_HORIZONTAL_BLOCKS, 32 * NUM_VERTICAL_BLOCKS, game.width * 1 / 3, 80);
 		panel.setNextAppearingPieces();
-		xml_manager = new XmlManager("Effects.xml", panel.height);	//XmlManagerの初期化
+		xml_manager = new XmlManager("Effects.xml", panel.y + panel.height);	//XmlManagerの初期化
+		variable_store.addVar("panel", {"width" : panel.width, "height" : panel.height});
 		var panel_background = new enchant.Surface(panel.width, panel.height);
-		var ctx = panel_background.context;
-		ctx.fillStyle = "#ebebeb";
-		ctx.fillRect(0, 0, panel.width, panel.height);
-		ctx.strokeStyle = "rgb(0, 0, 0)";
-		ctx.beginPath();
-		ctx.moveTo(0, 0);
-		ctx.lineTo(panel.width, 0);
-		ctx.lineTo(panel.width, panel.height);
-		ctx.lineTo(0, panel.height);
-		ctx.closePath();
-		ctx.stroke();
-		if(game.is_debug){
-			(function(){
-				ctx.strokeStyle = "rgb(0, 0, 0)";
-				ctx.beginPath();
-				for(var x = panel.size_of_block.width; x < panel.width; x += panel.size_of_block.width){
-					ctx.moveTo(x, 0);
-					ctx.lineTo(x, panel.height);
-				}
-				ctx.stroke();
-				ctx.beginPath();
-				for(var y = panel.size_of_block.height; y < panel.height; y += panel.size_of_block.height){
-					ctx.moveTo(0, y);
-					ctx.lineTo(panel.width, y);
-				}
-				ctx.stroke();
-			})();
-		}
+		
+		(function(){
+			var ctx = panel_background.context;
+			ctx.fillStyle = "#ebebeb";
+			ctx.fillRect(0, 0, panel.width, panel.height);
+			ctx.strokeStyle = "rgb(0, 0, 0)";
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(panel.width, 0);
+			ctx.lineTo(panel.width, panel.height);
+			ctx.lineTo(0, panel.height);
+			ctx.closePath();
+			ctx.stroke();
+			
+			ctx.strokeStyle = "rgb(0, 0, 0)";		//パネル内にグリッドを描く
+			ctx.beginPath();
+			for(var x = panel.size_of_block.width; x < panel.width; x += panel.size_of_block.width){
+				ctx.moveTo(x, 0);
+				ctx.lineTo(x, panel.height);
+			}
+			ctx.stroke();
+			ctx.beginPath();
+			for(var y = panel.size_of_block.height; y < panel.height; y += panel.size_of_block.height){
+				ctx.moveTo(0, y);
+				ctx.lineTo(panel.width, y);
+			}
+			ctx.stroke();
+		})();
 		panel.image = panel_background;
 		this.addChild(panel.next_piece_label.next_label);
 		this.addChild(panel.score_label);
+		this.addChild(panel.quick_reference);
+		this.addChild(panel.home_button);
 		this.addChild(panel.manual_button);
 		this.addChild(panel);
 		
@@ -1789,11 +2040,11 @@ var Stage = enchant.Class.create(enchant.Scene, {
 			});
 		}
 		
-		var prev_touched_pos = {"x" : 0, "y" : 0}, touched = false, prev_touched_frame = 0;
+		var prev_touched_pos = {"x" : 0, "y" : 0}, touched = false, prev_touched_frame = 0, amount_of_moving = 5, margin = 32;
 		var isInPlayerPieces = function(x, y){
 			var player_pieces = panel.cur_falling_pieces;
-			return (player_pieces.x <= x && x <= player_pieces.x + player_pieces.width && player_pieces.y <= y 
-					&& y <= player_pieces.y + player_pieces.height);
+			return (player_pieces.x - margin <= x && x <= player_pieces.x + player_pieces.width + margin && player_pieces.y - margin <= y 
+					&& y <= player_pieces.y + player_pieces.height + margin);
 		}
 		
 		this.addEventListener('touchstart', function(e){
@@ -1808,15 +2059,15 @@ var Stage = enchant.Class.create(enchant.Scene, {
 		this.addEventListener('touchmove', function(e){
 			if(touched){
 				var pos_diff = {"x" : e.x - prev_touched_pos.x, "y" : e.y - prev_touched_pos.y}, player_pieces = panel.cur_falling_pieces;
-				if(pos_diff.x >= 10){
+				if(pos_diff.x >= amount_of_moving){
 					game.input["right"] = true;
-				}else if(pos_diff.x <= -10){
+				}else if(pos_diff.x <= -amount_of_moving){
 					game.input["left"] = true;
-				}else if(e.x >= player_pieces.x + player_pieces.width / 2 && pos_diff.y >= 10 
-						|| e.x <= player_pieces.x + player_pieces.width / 2 && pos_diff.y <= -10){
+				}else if(e.x >= player_pieces.x + player_pieces.width / 2 && pos_diff.y >= amount_of_moving 
+						|| e.x <= player_pieces.x + player_pieces.width / 2 && pos_diff.y <= -amount_of_moving){
 					game.input["down"] = true;
-				}else if(e.x >= player_pieces.x + player_pieces.width / 2 && pos_diff.y <= -10 
-						|| e.x <= player_pieces.x + player_pieces.width / 2 && pos_diff.y >= 10){
+				}else if(e.x >= player_pieces.x + player_pieces.width / 2 && pos_diff.y <= -amount_of_moving 
+						|| e.x <= player_pieces.x + player_pieces.width / 2 && pos_diff.y >= amount_of_moving){
 					game.input["up"] = true;
 				}else{
 					['left', 'right', 'up', 'down', 'a', 'b'].forEach(function(type){
@@ -1833,13 +2084,19 @@ var Stage = enchant.Class.create(enchant.Scene, {
 		
 		this.addEventListener('touchend', function(e){
 			if(touched){
-				if(game.frame - prev_touched_frame <= 10){
+				if(game.frame - prev_touched_frame <= 20){
 					game.input["a"] = true;
 				}else{
-					if(game.input["a"]){
-						game.input["a"] = false;
-					}
+					['a', 'b'].forEach(function(type){
+						if(game.input[type]){
+							game.input[type] = false;
+						}
+					});
 				}
+				
+				touched = false;
+			}else if(e.x <= panel.x && e.y <= panel.y){
+				game.input["b"] = true;
 			}
 		});
 	}
@@ -1850,12 +2107,14 @@ window.onload = function(){
 	game.fps = 30;
 	game.preload(['images/piece_akari.png', 'images/piece_ayano.png', 'images/piece_chinatsu.png', 'images/piece_chitose.png',
 	              'images/piece_himawari.png', 'images/piece_kyoko.png', 'images/piece_sakurako.png', 'images/piece_yui.png']);
-	game.is_debug = true;
+	game.is_debug = false;
 	game.onload = function(){
 		sound_manager = new SoundManager();
 		label_manager = new LabelManager();
 		var stage = new Stage();
 		game.pushScene(stage);
+		var menu = new StartScene();
+		game.pushScene(menu);
 	};
 	
 	game.keybind(32, 'a');
