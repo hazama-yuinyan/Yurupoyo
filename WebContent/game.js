@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ゆるゆり＋ぷよぷよ風のゲーム
  * 
  * game.js
@@ -39,7 +39,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  * 
- * enchant.js v0.4.1
+ * enchant.js v0.4.3
  *
  * Copyright (c) Ubiquitous Entertainment Inc.
  * Dual licensed under the MIT or GPL Version 3 licenses
@@ -124,13 +124,50 @@ const NUM_HORIZONTAL_BLOCKS = 10;
 var PieceTypes = {"AKARI" : 0, "AYANO" : 1, "CHINATSU" : 2, "CHITOSE" : 3, "HIMAWARI" : 4, "KYOKO" : 5, "SAKURAKO" : 6, "YUI" : 7, "MAX" : 8};
 var ColorTable = ["rgb(233, 109, 140)", "rgb(138, 73, 108)", "rgb(252, 209, 219)", "rgb(222, 217, 240)", "rgb(103, 122, 157)",
                     "rgb(234, 223, 186)", "rgb(232, 205, 182)", "rgb(84, 61, 70)"];
+var Translations = {
+    "ja" : {
+        start : {
+            "explanation" : "スペースキーまたはタッチでモード選択ができます",
+            "slow_mode" : "ゆったりモード",
+            "fast_mode" : "サバイバルモード"
+        },
+        
+        end : {
+            "explanation" : "スペースキーを押すか画面をタッチ・クリックするとメニューに戻ります"
+        },
+        
+        pause : {
+            "explanation" : "矢印キー上、またはクリック・タッチでゲームを再開します"
+        },
+        
+        panel : {
+            "manual_link" : "manual.html"
+        }
+    }, 
+    "en" : {
+        start : {
+            "explanation" : "Press the space bar or click/touch to choose a preferred mode",
+            "slow_mode" : "Take-your-own-pace mode",
+            "fast_mode" : "Beat-it-or-beaten mode"
+        },
+        
+        end : {
+            "explanation" : "Press the space bar or click/touch the screen to get back to the menu"
+        },
+        
+        pause : {
+            "explanation" : "Press the up arrow key or click/touch the screen to resume the game"
+        },
+        
+        panel : {
+            "manual_link" : "manual_en.html"
+        }
+    }
+};
 
-/**
- * 四捨五入する関数
- */
-Math.round = function(number){
-	return Math.floor(number + 0.5);
-}
+var system_lang = navigator.language;
+
+
 
 /**
  * propsの中からvalueの値を持つプロパティーを探し出し、そのプロパティー名を返す
@@ -253,7 +290,7 @@ var StartScene = enchant.Class.create(enchant.Scene, {
 		menu_label.backgroundColor = "#ffffff";
 		this.addChild(menu_label);
 		
-		var explain_label = new enchant.Label("スペースキーまたはタッチでモード選択ができます");
+		var explain_label = new enchant.Label(Translations[system_lang].start.explanation);
 		explain_label.x = 0;
 		explain_label.y = 350;
 		explain_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
@@ -263,7 +300,7 @@ var StartScene = enchant.Class.create(enchant.Scene, {
 		this.addChild(explain_label);
 		
 		this.mode_labels = new Array();
-		var slow_mode_label = new enchant.Label("ゆったりモード");
+		var slow_mode_label = new enchant.Label(Translations[system_lang].start.slow_mode);
 		slow_mode_label.x = game.width / 2 - 90;
 		slow_mode_label.y = 200;
 		slow_mode_label.color = ColorTable[PieceTypes.AKARI];
@@ -273,7 +310,7 @@ var StartScene = enchant.Class.create(enchant.Scene, {
 		this.mode_labels.push(slow_mode_label);
 		this.addChild(this.mode_labels[0]);
 
-		var fast_mode_label = new enchant.Label("サバイバルモード");
+		var fast_mode_label = new enchant.Label(Translations[system_lang].start.fast_mode);
 		fast_mode_label.x = game.width / 2 - 90;
 		fast_mode_label.y = 250;
 		fast_mode_label.color = "#000000";
@@ -339,7 +376,7 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 		var scene = this;
 		this.backgroundColor = "rgba(100, 100, 100, 0.6)";
 		
-		var explain_label = new enchant.Label("スペースキーを押すか画面をタッチ・クリックするとメニューに戻ります");
+		var explain_label = new enchant.Label(Translations[system_lang].end.explanation);
 		explain_label.x = 0;
 		explain_label.y = (y + 100) + panel_height / 2 + 40;
 		explain_label.width = game.width;
@@ -347,7 +384,7 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 		explain_label.backgroundColor = "#ffffff";
 		this.addChild(explain_label);
 		
-		var tweet_button = new enchant.Label("");
+		/*var tweet_button = new enchant.Label("");
 		tweet_button.x = x;
 		tweet_button.y = y + 50;
 		tweet_button.width = 120;
@@ -447,17 +484,17 @@ var GameOverScene = enchant.Class.create(enchant.Scene, {
 				}
 			}
 			http_obj.send('{"user_name":"' + user_name + '","score":' + score + ', "survival":' + game.is_survival + '}');
-		}
+		}*/
 		
 		this.addEventListener('enterframe', function(){
 			var ranking_tag = document.getElementById("ranking");
-			if(ranking_tag != null){
+			/*if(ranking_tag != null){
 				if(ranking_tag.scrollTop != ranking_tag.scrollHeight - ranking_tag.clientHeight){
 					++ranking_tag.scrollTop;	//ランキングを少しずつスクロールさせる
 				}else{
 					ranking_tag.scrollTop = 0;
 				}
-			}
+			}*/
 			
 			if(game.input.a){
 				var stage = new Stage();
@@ -496,7 +533,7 @@ var PauseScene = enchant.Class.create(enchant.Scene, {
 		
 		this.backgroundColor = "rgba(100, 100, 100, 0.6)";
 		
-		var explain_label = new enchant.Label("矢印キー上、またはクリック・タッチでゲームを再開します");
+		var explain_label = new enchant.Label(Translations[system_lang].pause.explanation);
 		explain_label.x = x;
 		explain_label.y = y + 40;
 		explain_label.font = "bold large 'うずらフォント', 'MS ゴシック'";
@@ -1298,8 +1335,9 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		this.score_label = new Score();								//スコアを画面に表示するラベル
 		this.num_successive_disappearance = 1;						//現在の連鎖の数
 		this.selected_effect_num = -1;
+		this.shows_conversation = true;
 		this.effect_manager = new EffectManager();					//エフェクトマネージャー
-		this.home_button = new enchant.Label('<a href="http://filesforbots.me.land.to/index.html"  target="_blank"'
+		this.home_button = new enchant.Label('<a href="http://funprogramming.ojaru.jp"  target="_blank"'
 				+ ' style="border: outset 5px #aaaaaa; border-radius: 30px;'
 				+ ' color: #000000; background-color: #aaaaaa; box-shadow: 2px 2px 1px #bbbcbc; text-decoration: none;'
 				+ 'background: -moz-linear-gradient(top, #fff, #F1F1F1 1%, #F1F1F1 50%, #DFDFDF 99%, #ccc);'  
@@ -1308,7 +1346,7 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		this.home_button.x = 0;
 		this.home_button.y = this.y + (this.height - 10);
 		this.home_button.width = this.x / 2;
-		this.manual_button = new enchant.Label('<a href="manual.html" target="_blank" style="border: outset 5px #aaaaaa; border-radius: 30px;'
+		this.manual_button = new enchant.Label('<a href="', Translations[system_lang].panel.manual_link,'" target="_blank" style="border: outset 5px #aaaaaa; border-radius: 30px;'
 				+ ' color: #000000; background-color: #aaaaaa; box-shadow: 2px 2px 1px #bbbcbc; text-decoration: none;'
 				+ 'background: -moz-linear-gradient(top, #fff, #F1F1F1 1%, #F1F1F1 50%, #DFDFDF 99%, #ccc);'  
 			    + 'background: -webkit-gradient(linear, left top, left bottom, from(#fff), color-stop(0.01, #F1F1F1),'
@@ -1330,7 +1368,8 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 		             ["矢印キー下、またはピースの中心軸より右側で真下にドラッグするか左側で真上にドラッグする", "中心軸より右側なら真下、左側なら真上にドラッグ"],
 		             ["矢印キー上、または時計回りに回転と逆の動作をマウスでする", "時計回りに回転と逆の動作"],
 		             ["スペースキー、またはピースをクリックする", "ピースをタッチする"],
-		             ["Pキー、またはSCOREのあたりをクリック", "SCOREのあたりをタッチ"]];
+		             ["Pキー、またはSCOREのあたりをクリック", "SCOREのあたりをタッチ"],
+		             ["Mキー", "対応していません"]];
 		this.quick_reference = new enchant.Label(['<table>',
 	    		'<caption>クイックリファレンス</caption>',
 	    		'<colgroup span="1" style="width:33.3%; font: normal small \'うずらフォント\', \'MS ゴシック\'">',
@@ -1345,10 +1384,11 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 	    		'	<tr><td>反時計回りに回転</td><td>', texts[4][platform_num], '</td>></tr>',
 	    		'	<tr><td>ピースを着地させる</td><td>', texts[5][platform_num], '</td></tr>',
 	    		'	<tr><td>ポーズ</td><td>', texts[6][platform_num], '</td></tr>',
+	    		'	<tr><td>エフェクトのオン・オフ</td><td>', texts[7][platform_num], '</td></tr>',
 	    		'</tbody>',
 	    	'</table>'].join(""));
 		this.quick_reference.x = 0;
-		this.quick_reference.y = this.y + this.height / 3;
+		this.quick_reference.y = this.y + this.height / 5;
 		this.quick_reference.width = this.x;
 		
 		this.shapes = {"shapes" : [
@@ -1396,56 +1436,25 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 	},
 	
 	/**
-	 * 現在プレイヤーが操作しているシェイプを反時計回りに90度回転させる
+	 * 現在プレイヤーが操作しているシェイプを90度回転させる
 	 */
-	rotateLeft : function(){
+	rotate : function(is_clockwise){
 		with(this){
 			var rotated_pieces = cur_falling_pieces.pieces.map(function(piece){
 				var return_piece = createNewPiece(piece.type);
 				return_piece.copyMembersFrom(piece);
 					
 				var before = {"x" : piece.position_in_shape.x, "y" : piece.position_in_shape.y};
-				return_piece.position_in_shape.x = Math.round(before.y * 1);	//回転行列にθ=pi/2を代入したもの
-				return_piece.position_in_shape.y = Math.round(-(before.x * 1));	//cos(pi/2)=0,sin(pi/2)=1となるため
+				return_piece.position_in_shape.x = Math.round((!is_clockwise) ? before.y * 1 : -(before.y * 1));	//回転行列にθ=pi/2を代入したもの
+				return_piece.position_in_shape.y = Math.round((!is_clockwise) ? -(before.x * 1) : before.x * 1);	//cos(pi/2)=0,sin(pi/2)=1となるため
 					
 				return_piece.convertPositionLocalToGlobal();
-					
-				return_piece.neighbors.swapAntiClockwise();
-				return return_piece;
-			}, this);
-			
-			if(rotated_pieces.every(function(piece){
-				return (piece.tryToMove(0, 0) && piece.tryToMove(0, 1));
-			})){
-				cur_falling_pieces.pieces.forEach(function(piece){
-					game.currentScene.removeChild(piece);
-				});
-				rotated_pieces.forEach(function(piece){
-					game.currentScene.addChild(piece);
-				});
-				cur_falling_pieces.pieces = rotated_pieces;
-				var tmp = cur_falling_pieces.width;
-				cur_falling_pieces.width = cur_falling_pieces.height;
-				cur_falling_pieces.height = tmp;
-			}
-		}
-	},
-	
-	/**
-	 * 現在プレイヤーが操作しているシェイプを時計回りに90度回転させる
-	 */
-	rotateRight : function(){
-		with(this){
-			var rotated_pieces = cur_falling_pieces.pieces.map(function(piece){
-				var return_piece = createNewPiece(piece.type);
-				return_piece.copyMembersFrom(piece);
-					
-				var before = {"x" : piece.position_in_shape.x, "y" : piece.position_in_shape.y};
-				return_piece.position_in_shape.x = Math.round(-(before.y * 1));	//回転行列にθ=pi/2を代入したもの
-				return_piece.position_in_shape.y = Math.round(before.x * 1);	//cos(pi/2)=0,sin(pi/2)=1となるため
-					
-				return_piece.convertPositionLocalToGlobal();
-				return_piece.neighbors.swapClockwise();
+				
+				if(!is_clockwise){
+					return_piece.neighbors.swapAntiClockwise();
+				}else{
+					return_piece.neighbors.swapClockwise();
+				}
 				return return_piece;
 			}, this);
 			
@@ -1484,10 +1493,10 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 				})) ? tmp_x : cur_falling_pieces.x;
 				game.input['right'] = false;
 			}else if(game.input.up){
-				rotateLeft();
+				rotate(false);
 				game.input['up'] = false;
 			}else if(game.input.down){
-				rotateRight();
+				rotate(true);
 				game.input['down'] = false;
 			}else if(game.input.a){
 				this.cur_falling_pieces.pieces.sort(function(lhs, rhs){		//下側にある要素を先に調べるためにy座標の順に並べ替える
@@ -1500,11 +1509,14 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 				}, this);
 				
 				this.is_ready_for_next_piece = true;
-				game.input["a"] = false;
+				game.input['a'] = false;
 			}else if(game.input.b){			//Bボタンを押されたらポーズする
 				var pause_scene = new PauseScene((this.x + this.width) / 2, (this.y + this.height) / 2, this.width);
 				game.pushScene(pause_scene);
-				game.input["b"] = false;
+				game.input['b'] = false;
+			}else if(game.input.c){
+				this.shows_conversation = !this.shows_conversation;
+				game.input['c'] = false;
 			}
 		}
 	},
@@ -1797,6 +1809,7 @@ var Panel = enchant.Class.create(enchant.Sprite, {
 	 * 自分と相手のピースの種類に合わせたエフェクトを選択する
 	 */
 	chooseAppropriateEffects : function(pieces, targets, average_coords, section_x, section_width){
+		if(!this.shows_conversation){return [];}
 		xml_manager.pieces = pieces;
 		xml_manager.average_coords = average_coords;
 		
@@ -2103,7 +2116,7 @@ var Stage = enchant.Class.create(enchant.Scene, {
 });
 
 window.onload = function(){
-	game = new enchant.Game(480, 760);
+	game = new enchant.Game(480, 800);
 	game.fps = 30;
 	game.preload(['images/piece_akari.png', 'images/piece_ayano.png', 'images/piece_chinatsu.png', 'images/piece_chitose.png',
 	              'images/piece_himawari.png', 'images/piece_kyoko.png', 'images/piece_sakurako.png', 'images/piece_yui.png']);
@@ -2119,5 +2132,20 @@ window.onload = function(){
 	
 	game.keybind(32, 'a');
 	game.keybind(80, 'b');
+	game.keybind(77, 'c');
+	
+	['c'].forEach(function(type){
+		this.addEventListener(type + 'buttondown', function(e) {
+			if (!this.input[type]) {
+				this.input[type] = true;
+			}
+		});
+		this.addEventListener(type + 'buttonup', function(e) {
+			if (this.input[type]) {
+				this.input[type] = false;
+			}
+		});
+	}, game);
+	
 	game.start();
 };

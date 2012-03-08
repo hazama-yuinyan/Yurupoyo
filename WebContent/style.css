@@ -1,4 +1,4 @@
-﻿body{
+body{
 	margin: 0px;
 	background-color: rgb(235, 235, 235);
 }
@@ -6,4 +6,18 @@
 
 .subtitle{
 	text-align: center;
+}
+
+.ta{
+	background-color: rgb(0, 30, 255);
+}
+
+.tu{
+	background-color: rgb(255, 30, 0);
+}
+
+.coupling_img{
+    -webkit-box-pack: center;
+    /*margin-right: auto;
+    display: block;*/
 }
