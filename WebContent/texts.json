@@ -1,0 +1,69 @@
+{
+    "reference" : {
+        "ja" : [["操作内容", "PC", "スマートフォン"],
+                ["右に移動", "矢印キー右、またはマウスで右にドラッグ", "ピースを右にドラッグ"],
+                ["左に移動", "矢印キー左、またはマウスで左にドラッグ", "ピースを左にドラッグ"],
+                ["時計回りに回転", "矢印キー下、またはピースの中心軸より右側で真下にドラッグするか左側で真上にドラッグする", "中心軸より右側なら真下、左側なら真上にドラッグ"],
+                ["反時計回りに回転", "矢印キー上、または時計回りに回転と逆の動作をマウスでする", "時計回りに回転と逆の動作"],
+                ["ピースを着地", "スペースキー、またはピースをクリックする", "ピースをタッチする"],
+                ["ポーズ", "Pキー、またはSCOREのあたりをクリック", "SCOREのあたりをタッチ"],
+                ["エフェクトのオン・オフ", "Mキー", "対応していません"]
+                ],
+        "en" : [["Reactions", "For PC", "For Smartphones"],
+                ["Move to right", "Right arrow key or drag the shape to the right", "Drag the shape to the right"],
+            	["Move to left", "Left arrow key or drag the shape to the left", "Drag the shape to the left"],
+        		["Rotate in clockwise", "Down arrow key or do the same as smartphones with mouse", "Flick upwards on the left half of the shape or flick downwards on the right"],
+        		["Rotate in anti-clockwise", "Up arrow key or do the same as smartphones with mouse", "Flick in the opposite way as \"Rotate in clockwise\""],
+        		["Land the shape", "The space bar or click on the shape", "Touch the shape"],
+        		["Pause", "P key or click around the \"SCORE\"", "Touch around the \"SCORE\""],
+                ["Turn off the effect", "M key", "Not supported"]
+                ]
+        },
+        
+    "texts" : {
+        "ja" : {
+            "start" : {
+                "explanation" : "スペースキーまたはタッチでモード選択ができます",
+                "slow_mode" : "ゆったりモード",
+                "fast_mode" : "サバイバルモード"
+            },
+    
+            "end" : {
+                "explanation" : "スペースキーを押すか画面をタッチ・クリックするとメニューに戻り、mキーまたは画面をホールドするとランキング登録画面に移動します"
+            },
+    
+            "pause" : {
+                "explanation" : "矢印キー上、またはクリック・タッチでゲームを再開します"
+            },
+    
+            "panel" : {
+                "manual_link" : "manual.html"
+            }
+        },
+        "en" : {
+            "start" : {
+                "explanation" : "Press the space bar or click/touch to choose a preferred mode",
+                "slow_mode" : "Take-your-own-pace mode",
+                "fast_mode" : "Beat-it-or-beaten mode"
+            },
+    
+            "end" : {
+                "explanation" : "Press the space bar or click/touch the screen to get back to the menu or press m key or hold on the screen to move to the ranking"
+            },
+    
+            "pause" : {
+                "explanation" : "Press the up arrow key or click/touch the screen to resume the game"
+            },
+    
+            "panel" : {
+                "manual_link" : "manual_en.html"
+            }
+        },
+        "common" : {
+            "results" : 
+            ["SHOW ME YOUR BEST!", "KEEP GOING", "GREAT", "EXCELLENT", "WOW! FANTASTIC", "OUTSTANDING!", "THE MASTER OF THE GAME!"],
+            "home_button" : "<a href=\"http://funprogramming.ojaru.jp\"  target=\"_blank\" style=\"border: outset 5px #aaaaaa; border-radius: 30px; color: #000000; background-color: #aaaaaa; box-shadow: 2px 2px 1px #bbbcbc; text-decoration: none;background: -moz-linear-gradient(top, #fff, #F1F1F1 1%, #F1F1F1 50%, #DFDFDF 99%, #ccc);background: -webkit-gradient(linear, left top, left bottom, from(#fff), color-stop(0.01, #F1F1F1),color-stop(0.5, #F1F1F1), color-stop(0.99, #DFDFDF), to(#ccc));\">HOME</a>",
+            "manual_base" : "<a href=\"TARGET_URL\" target=\"_blank\" style=\"border: outset 5px #aaaaaa; border-radius: 30px; color: #000000; background-color: #aaaaaa; box-shadow: 2px 2px 1px #bbbcbc; text-decoration: none; background: -moz-linear-gradient(top, #fff, #F1F1F1 1%, #F1F1F1 50%, #DFDFDF 99%, #ccc); background: -webkit-gradient(linear, left top, left bottom, from(#fff), color-stop(0.01, #F1F1F1),color-stop(0.5, #F1F1F1), color-stop(0.99, #DFDFDF), to(#ccc));\">MANUAL</a>"
+        }
+    }
+}
