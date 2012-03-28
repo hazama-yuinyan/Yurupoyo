@@ -25,7 +25,7 @@
 
 (function () {
 
-enchant.nineleap = { assets: [/*'start.png', 'end.png'*/] };
+enchant.nineleap = { assets: [/*'start.png',*/ 'end.png'] };
 
 /**
  * @scope enchant.nineleap.Game.prototype
@@ -61,10 +61,10 @@ enchant.nineleap.Game = enchant.Class.create(enchant.Game, {
                 if (game.currentScene == game.startScene) game.popScene();
                 this.removeEventListener('keydown', arguments.callee);
             });
-            this.pushScene(this.startScene);
+            this.pushScene(this.startScene);*/
 
             this.endScene = new SplashScene();
-            this.endScene.image = this.assets['end.png'];*/
+            this.endScene.image = this.assets['end.png'];
         });
         this.scoreQueue = false;
         this.started = false;

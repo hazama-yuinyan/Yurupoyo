@@ -17,21 +17,29 @@ Object.prototype.extend = function(destination, source){
 	return destination;
 };
 
-Object.prototype.clone = function(obj){
-	return Object.prototype.extend.call(this, {}, obj);
-};
+if(!Object.prototype.clone){
+	Object.prototype.clone = function(obj){
+		return Object.prototype.extend.call(this, {}, obj);
+	};
+}
 
-Object.prototype.isString = function(obj){
-	return obj.toString() == "[object String]";
-};
+if(!Object.prototype.isString){
+	Object.prototype.isString = function(obj){
+		return typeof(obj) == "string";
+	};
+}
 
-Object.prototype.isArray = function(obj){
-	return obj.toString() == "[object Array]";
-};
+if(!Object.prototype.isArray){
+	Object.prototype.isArray = function(obj){
+		return obj instanceof Array;
+	};
+}
 
-Object.prototype.isHash = function(obj){
-	return obj instanceof Hash;
-};
+if(!Object.prototype.isHash){
+	Object.prototype.isHash = function(obj){
+		return obj instanceof Hash;
+	};
+}
 
 Array.prototype.inject = function(memo, iterator, context) {
 	this.forEach(function(value, index) {
@@ -211,7 +219,7 @@ Parse.Parser = enchant.Class.create({
     },
     Maybe: function(child) {
         if(2 <= arguments.length) {
-            child = this.S.apply(this, arguments);
+            child = this.Seq.apply(this, arguments);
         }
         return {
             type: "Maybe",

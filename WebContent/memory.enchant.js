@@ -663,6 +663,6 @@ enchant.nineleap.memory.LocalStorage.DEBUG_MODE = false;
  * To debug, setting game ID
  * Don't change this if you don't upload game to 9leap.net yet.
  */
-enchant.nineleap.memory.LocalStorage.GAME_ID = 1231;
+enchant.nineleap.memory.LocalStorage.GAME_ID = 1276;
 
 })();
