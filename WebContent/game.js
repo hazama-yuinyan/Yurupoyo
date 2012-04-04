@@ -150,7 +150,7 @@ var shapes = {shapes : [                                                        
 		               widths : [32 * 3, 32 * 3, 32 * 3, 32 * 2, 32 * 4, 32 * 2, 32 * 2, 32 * 3, 32, 32 * 2],
 		               heights : [32 * 2, 32 * 2, 32 * 2, 32 * 2, 32, 32 * 2, 32 * 2, 32, 32 * 2, 32]};
 
-var system_lang = navigator.language;
+var system_lang = navigator.language, system_platform = navigator.platform;
 
 
 if(navigator.userAgent.toLowerCase().search("chrome") != -1){   //Chromeだと、funのコンテキストを変えられないようなので、そのWorkaround
@@ -185,6 +185,7 @@ function getPropertyName(props, value){
 
 /**
  * 文字列とRulerに指定したスタイルからその文字列を表示するのに最低限必要な幅と高さを算出する
+ * @returns {Object}
  */
 String.prototype.getExpansion = function(){
 	var e = document.getElementById("ruler");
@@ -196,12 +197,23 @@ String.prototype.getExpansion = function(){
 	return expansion;
 }
 
+/**
+ * getExpansionで使用するCSSスタイルを設定する。getExpansionを使用するにはメインのHTMLファイルにid="ruler"というdiv要素が必要です。
+ * @param style 設定するCSSスタイルの文字列
+ * @postcondition styleを考慮した幅と高さがgetExpansionで算出される
+ */
 function setRulerStyle(style){
 	var elem = document.getElementById("ruler");
 	var new_style = "visibility: hidden; position: absolute;" + style;
 	elem.setAttribute("style", new_style);
 }
 
+/**
+ * 与えられた幅に収まるようにこの文字列に改行を追加する
+ * @param max_width 許容できる最大幅
+ * @param num_lines 改行の追加によって何行になったかがこのオブジェクトにセットされる
+ * @returns {String} 改行が追加された文字列
+ */
 String.prototype.fitInWidth = function(max_width, num_lines){
 	num_lines.val = 1;
 	if(this.length == 0){return "";}
@@ -253,45 +265,18 @@ Array.prototype.contains = function(obj){
 	return (this.indexOf(obj) != -1);
 }
 
-/**
- * mapとほぼ同機能だが、こちらは1番目の引数に渡す関数オブジェクトは配列を戻り値にしなければならない
- */
-Array.prototype.mapWithArray = function(fun/*, thisp*/){
-	var len = this.length;
-	if(typeof fun != "function"){throw new TypeError();}
-
-	var result = [];
-	var this_p = arguments[1];
-	for(var i = 0; i < len; ++i){
-		if(i in this){result = result.concat(fun.call(this_p, this[i], i, this));}
-	}
-
-	return result;
-}
-
-Array.prototype.swapClockwise = function(){
-	var tmp = this[this.length - 1];
-	this.forEach(function(elem, index, array){
-		if(index != 0){elem = array[index - 1];}
-		this[0] = tmp;
-	});
-}
-
-Array.prototype.swapAntiClockwise = function(){
-	var tmp = this[0];
-	this.forEach(function(elem, index, array){
-		elem = (index != this.length - 1) ? array[index + 1] : tmp;
-	});
-}
-
 if(!Array.prototype.deepCopy){
+    /**
+     * 配列の深いコピーをする。これを使うと数字や文字列などのプリミティブ型以外のオブジェクトもディープコピーされる
+     * @returns {Array} コピーされた配列
+     */
     Array.prototype.deepCopy = function(){
         var cloned = [];
         this.forEach(function(obj, index){
             if(obj instanceof Array){
                 cloned[index] = obj.slice(0);
             }else if(obj && typeof obj == "object"){
-                cloned[index] = obj.clone();
+                cloned[index] = obj.clone(obj);
             }else{
                 cloned[index] = obj;
             }
@@ -301,8 +286,19 @@ if(!Array.prototype.deepCopy){
     }
 }
 
+if(!Object.prototype.copyFrom){
+    Object.prototype.copyFrom = function(){
+        var tmp = {};
+        for(var property in this){
+            if(this.hasOwnProperty(property)){tmp[property] = this[property];}
+        }
+        
+        return tmp;
+    }
+}
+
 var StartScreen = enchant.Class.create(enchant.Group, {
-	initialize : function(input_manager, task_manager, xml_manager){
+	initialize : function(input_manager, task_manager, xml_manager, field){
 		enchant.Group.call(this);
 
         var back = new enchant.Sprite(game.width, game.height);
@@ -313,9 +309,9 @@ var StartScreen = enchant.Class.create(enchant.Group, {
         this.width = game.width;
         this.height = game.height;
 
-		var selected_menu_num = 0, last_selected = 0;
+		this.selected_menu_num = 0;
 		var menu_label = new enchant.Label("MENU");
-		menu_label.x = game.width / 2 - 50;
+		menu_label.x = field.x + field.width / 2 - 50;
 		menu_label.y = 100;
 		menu_label.font = "normal xx-large 'うずらフォント', 'MS ゴシック'";
 		setRulerStyle(" font: " + menu_label.font);
@@ -336,7 +332,7 @@ var StartScreen = enchant.Class.create(enchant.Group, {
 
 		this.mode_labels = [];
 		var slow_mode_label = new enchant.Label(start_texts.slow_mode);
-		slow_mode_label.x = game.width / 2 - 90;
+		slow_mode_label.x = field.x + field.width / 2 - 90;
 		slow_mode_label.y = 200;
 		slow_mode_label.color = "rgb(233, 109, 140)";
 		slow_mode_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
@@ -347,7 +343,7 @@ var StartScreen = enchant.Class.create(enchant.Group, {
 		this.addChild(this.mode_labels[0]);
 
 		var fast_mode_label = new enchant.Label(start_texts.fast_mode);
-		fast_mode_label.x = game.width / 2 - 90;
+		fast_mode_label.x = field.x + field.width / 2 - 90;
 		fast_mode_label.y = 250;
 		fast_mode_label.color = "#000000";
 		fast_mode_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
@@ -356,6 +352,17 @@ var StartScreen = enchant.Class.create(enchant.Group, {
         fast_mode_label._style.cursor = "pointer";
 		this.mode_labels.push(fast_mode_label);
 		this.addChild(this.mode_labels[1]);
+        
+        var vs_cpu_label = new enchant.Label(start_texts.vs_cpu);
+        vs_cpu_label.x = field.x + field.width / 2 - 90;
+        vs_cpu_label.y = 300;
+        vs_cpu_label.color = "#000000";
+        vs_cpu_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
+        vs_cpu_label.width = vs_cpu_label.text.getExpansion().width;
+        vs_cpu_label.backgroundColor = "#ffffff";
+        vs_cpu_label._style.cursor = "pointer";
+        this.mode_labels.push(vs_cpu_label);
+        this.addChild(this.mode_labels[2]);
 
 		function isInArea(x, y, obj){
 			return(obj.x <= x && x <= obj.x + obj.width && obj.y <= y && y <= obj.y + obj._element.clientHeight);
@@ -365,7 +372,7 @@ var StartScreen = enchant.Class.create(enchant.Group, {
 
 		var touched = false, prev_touched_frame = 0;
 		this.addEventListener('touchstart', function(e){
-			if(isInArea(e.x, e.y, this.mode_labels[0]) || isInArea(e.x, e.y, this.mode_labels[1])){
+			if(isInArea(e.x, e.y, this.mode_labels[0]) || isInArea(e.x, e.y, this.mode_labels[1]) || isInArea(e.x, e.y, this.mode_labels[2])){
 				touched = true;
 				prev_touched_frame = game.frame;
 			}
@@ -373,18 +380,21 @@ var StartScreen = enchant.Class.create(enchant.Group, {
 
 		this.addEventListener('touchend', function(e){
 			if(touched && game.frame - prev_touched_frame <= 20){
+                var last_selected = this.selected_menu_num;
+                
 				if(isInArea(e.x, e.y, this.mode_labels[0])){
-					selected_menu_num = 0;
+					this.selected_menu_num = 0;
 				}else if(isInArea(e.x, e.y, this.mode_labels[1])){
-					selected_menu_num = 1;
+					this.selected_menu_num = 1;
+				}else if(isInArea(e.x, e.y, this.mode_labels[2])){
+    			    this.selected_menu_num = 2;
 				}
 
-				if(selected_menu_num == last_selected){
-					game.is_survival = (selected_menu_num == 1);
+				if(this.selected_menu_num == last_selected){
                     game.input.a = true;
 				}else{
-                    task_manager.add(new UpdateMenuTask(task_manager, this.mode_labels, selected_menu_num, last_selected));
-                    last_selected = selected_menu_num;
+                    task_manager.add(new UpdateMenuTask(task_manager, this.mode_labels, this.selected_menu_num, last_selected));
+                    last_selected = this.selected_menu_num;
 				}
 			}
 		});
@@ -414,7 +424,7 @@ var GameOver = enchant.Class.create({
 });
 
 var PauseScreen = enchant.Class.create(enchant.Group, {
-	initialize : function(xml_manager, y, panel_height){
+	initialize : function(xml_manager, y, field_height){
 		enchant.Group.call(this);
 
         var back = new enchant.Sprite(game.width, game.height);
@@ -427,7 +437,7 @@ var PauseScreen = enchant.Class.create(enchant.Group, {
         
         var pause_label = new enchant.Label("PAUSED");
 		pause_label.font = "bold xx-large 'うずらフォント','MS ゴシック'";
-		pause_label.y = (y + 100) + panel_height / 2 + 40;
+		pause_label.y = (y + 100) + field_height / 2 + 40;
 		setRulerStyle(" font: " + pause_label.font);
 		pause_label.width = pause_label.text.getExpansion().width;
         pause_label.x = game.width / 2 - pause_label.width / 2;
@@ -450,7 +460,7 @@ var PauseScreen = enchant.Class.create(enchant.Group, {
 		ranking_label.backgroundColor = "#ffffff";
 
 		var ranking_list = document.createElement("div");
-		ranking_list.setAttribute("style", "height: " + panel_height / 2 + "px; border: inset 5px #ff1012; overflow: hidden");
+		ranking_list.setAttribute("style", "height: " + field_height / 2 + "px; border: inset 5px #ff1012; overflow: hidden");
 		ranking_list.setAttribute("id", "ranking");
 		var ranking_title = document.createElement("p");
 		ranking_title.setAttribute("style", "text-align: center; font: bold large 'うずらフォント', 'MS ゴシック'");
@@ -505,11 +515,10 @@ var PauseScreen = enchant.Class.create(enchant.Group, {
 });
 
 var Score = enchant.Class.create(enchant.Label, {
-	initialize : function(){
+	initialize : function(x, y){
 		enchant.Label.call(this, "SCORE:0");
 
-		this.x = 0;
-		this.y = 0;
+		this.moveTo(x, y);
 		this.font = "bold xx-large 'うずらフォント','MS ゴシック'";
 		this.backgroundColor = "#ebebeb";
 		this.color = "#ff1512";
@@ -579,9 +588,9 @@ var Piece = enchant.Class.create(enchant.Sprite, {
         var tmp = new Piece(this.width, this.height, this.type);
         tmp.image = this.image;
         tmp.frame = this.frame;
-        tmp.position = this.position.clone(this.position);
-        tmp.real_coords = this.real_coords.clone(this.real_coords);
-        tmp.position_in_shape = this.position_in_shape.clone(this.position_in_shape);
+        tmp.position = this.position.copyFrom();
+        tmp.real_coords = this.real_coords.copyFrom();
+        tmp.position_in_shape = this.position_in_shape.copyFrom();
         tmp.neighbors = this.neighbors.slice(0);
         tmp.neighbors_buffer = this.neighbors_buffer;
         tmp.connecting_to = this.connecting_to;
@@ -608,7 +617,7 @@ var Piece = enchant.Class.create(enchant.Sprite, {
 		case 2:
 			if((this.connecting_to & 0x02) != 0x02){
 				this.connecting_to |= 0x02;		//0010
-				effect_manager.addEffect(new TimeIndependentVibrationEffect(this, Math.floor(this.real_coords.x) - 3
+				effect_manager.add(new TimeIndependentVibrationEffect(this, Math.floor(this.real_coords.x) - 3
 						, Math.floor(this.real_coords.x) + 3, Math.floor(this.real_coords.y) - 6, Math.floor(this.real_coords.y)
 						, 2, 0));
 			}
@@ -617,7 +626,7 @@ var Piece = enchant.Class.create(enchant.Sprite, {
 		case 3:
 			if((this.connecting_to & 0x01) != 0x01){
 				this.connecting_to |= 0x01;		//0001
-				effect_manager.addEffect(new TimeIndependentVibrationEffect(this, Math.floor(this.real_coords.x) - 3
+				effect_manager.add(new TimeIndependentVibrationEffect(this, Math.floor(this.real_coords.x) - 3
 						, Math.floor(this.real_coords.x) + 3, Math.floor(this.real_coords.y), Math.floor(this.real_coords.y) + 6
 						, 2, 0));
 			}
@@ -649,6 +658,19 @@ var Piece = enchant.Class.create(enchant.Sprite, {
 		}, this);
 	},
     
+    countConnectedPieces : function(group, num){
+        if(group.contains(this)){return num - 1;}
+        group.push(this);
+        var tmp_num = num;
+        this.neighbors.forEach(function(piece){
+            if(piece && this.isOfSameType(piece)){
+                tmp_num = piece.countConnectedPieces(group, tmp_num + 1);
+            }
+        }, this);
+        
+        return tmp_num;
+    },
+    
     /**
      * 画面の厳密な座標系から画面表示の座標系へ座標変換する
 	 */
@@ -673,7 +695,289 @@ var PieceFactory = enchant.Class.create({
     create : function(type, size_of_block){
 		return new Piece(size_of_block.width, size_of_block.height, type, ImagePaths[type]);
     }
-})
+});
+
+var PlayerPieces = enchant.Class.create({
+    initialize : function(pieces, x, y, width, height, v_y){
+		this.pieces = pieces;
+		this.width = width;
+		this.height = height;
+		this.x = x;
+		this.y = y;
+		this.v_y = v_y;
+        this.is_movable = true;
+	}
+});
+
+var Field = enchant.Class.create(enchant.Sprite, {
+    initialize : function(width, height, x, y, size_of_block){
+        enchant.Sprite.call(this, width, height);
+        
+        this.x = x;
+    	this.y = y;
+		this.pieces = [];	//メインの格子状のエリアに配置されている全ピース
+		for(var i = 0; i < NUM_VERTICAL_BLOCKS * NUM_HORIZONTAL_BLOCKS; ++i){this.pieces.push(null);}
+        
+        var field_background = new enchant.Surface(this.width, this.height), self = this;
+
+        (function(){
+			var ctx = field_background.context;
+			ctx.fillStyle = "#ebebeb";
+			ctx.fillRect(0, 0, self.width, self.height);
+			ctx.strokeStyle = "rgb(0, 0, 0)";
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(self.width, 0);
+			ctx.lineTo(self.width, self.height);
+			ctx.lineTo(0, self.height);
+			ctx.closePath();
+			ctx.stroke();
+
+			ctx.strokeStyle = "rgb(0, 0, 0)";		//フィールド内にグリッドを描く
+			ctx.beginPath();
+			for(var x = size_of_block.width; x < self.width; x += size_of_block.width){
+				ctx.moveTo(x, 0);
+				ctx.lineTo(x, self.height);
+			}
+			ctx.stroke();
+			ctx.beginPath();
+			for(var y = size_of_block.height; y < self.height; y += size_of_block.height){
+				ctx.moveTo(0, y);
+				ctx.lineTo(self.width, y);
+			}
+			ctx.stroke();
+		})();
+        
+		this.image = field_background;
+    },
+    
+    /**
+     * 引数のピースの周りに存在するピースの参照を追加する
+	 */
+	addNeighborsReference : function(piece){
+		[{x : -1, y : 0}, {x : 1, y : 0}, {x : 0, y : -1}, {x : 0, y : 1}].forEach(function(pos, index){
+			piece.neighbors[index] = this.getPieceOnFieldAt(piece.position.x + pos.x, piece.position.y + pos.y);
+		}, this);
+	},
+    
+    /**
+     * パネル上の指定した位置にピースがあるかどうかを返す
+	 */
+	anyPieceExistsAt : function(x, y){
+		return isInRange(0, NUM_HORIZONTAL_BLOCKS, x) && isInRange(0, NUM_VERTICAL_BLOCKS, y)
+		&& (this.pieces[NUM_HORIZONTAL_BLOCKS * y + x] != null);
+	},
+
+	/**
+	 * 指定した位置のピースの参照を返す
+	 * 内部でvalidityを確かめているので使用前にanyPieceExistsAtを呼び出す必要はない
+	 */
+	getPieceOnFieldAt : function(x, y){
+		return (isInRange(0, NUM_HORIZONTAL_BLOCKS, x) && isInRange(0, NUM_VERTICAL_BLOCKS, y))
+		? this.pieces[NUM_HORIZONTAL_BLOCKS * y + x] : null;
+	},
+
+	/**
+	 * 引数のピースをパネル上に固定する
+	 */
+	setPieceToField : function(piece){
+        if(game._debug){console.log(["[", game.frame, "] set piece at: ", piece.logPosition()].join(""));}
+		this.pieces[NUM_HORIZONTAL_BLOCKS * piece.position.y + piece.position.x] = piece;
+	},
+
+	/**
+	 * 指定したピースをパネルから取り除く
+	 */
+	removePiece : function(piece){
+		this.pieces[NUM_HORIZONTAL_BLOCKS * piece.position.y + piece.position.x] = null;
+        if(game._debug){console.log(["[", game.frame, "] removed piece at: ", piece.logPosition()].join(""));}
+	},
+    
+    /**
+     * ピースが指定した方向に移動可能か返す
+     * (x, y)は移動する方向を表すベクトル
+	 */
+	tryToMove : function(piece_pos, x, y){
+		return (isInRange(0, NUM_HORIZONTAL_BLOCKS, Math.floor(piece_pos.x + x)) &&
+			    isInRange(0, NUM_VERTICAL_BLOCKS, Math.floor(piece_pos.y + y)) &&
+				!this.anyPieceExistsAt(Math.floor(piece_pos.x + x), Math.floor(piece_pos.y + y)));
+	}
+});
+
+var Panel = enchant.Class.create({
+	initialize : function(width, height, x, y, xml_manager){
+		this.pieces_moving_rate = 30;	    //現在のピースが1ます分落下する頻度
+		this.next_speed_up_score = 10000;	//サバイバルモードで次にピースの落下速度が上がる得点
+		this.cur_falling_pieces = null;	    //現在プレイヤーが操作しているシェイプの情報
+		this.size_of_block = {width : 32, height : 32};		//1ますのサイズ
+		this.next_appearing_pieces = null;		            //次に出現するシェイプの情報
+		this.next_piece_label = null;
+		this.score_label = null;					    //スコアを画面に表示するラベル
+		this.num_successive_scoring = 1;			    	//現在の連鎖の数
+		this.shows_conversation = true;                     //ピースが消えるときにエフェクトをかけるかどうか
+        this.is_new_pieces_set = false;                     //新しいピースがnext_appearing_piecesにセットされたかどうか
+        this.remaining_time = 60.0;                         //残りの持ち時間（対戦用）
+        this.field = new Field(width, height, x, y, this.size_of_block);
+        
+        var texts = xml_manager.getText("texts");
+		this.home_button = new enchant.Label(texts.common.home_button);	//ホームに戻るリンクボタン
+		this.home_button.x = 0;
+		this.home_button.y = y + (height - 10);
+		this.home_button.width = x / 2;
+		this.manual_button = new enchant.Label(texts.common.manual_base.replace(/TARGET_URL/, texts[system_lang].panel.manual_link));		//マニュアルを表示するボタン
+		this.manual_button.x = x / 2;
+		this.manual_button.y = y + (height - 10);
+		this.manual_button.width = x / 2;
+
+		var TOUCH_ENABLED = (function() {
+		    var div = document.createElement('div');
+		    div.setAttribute('ontouchstart', 'return');
+		    return typeof div.ontouchstart == 'function';
+		})();
+
+		var platform_num = (TOUCH_ENABLED) ? 2 : 1, references = xml_manager.getText("reference");
+		this.quick_reference = new enchant.Label(
+            ['<table>',
+	    		'<caption>', references[system_lang][0][0], '</caption>',
+	    		'<colgroup span="1" style="width:33.3%; font: normal small \'うずらフォント\', \'MS ゴシック\'">',
+	    		'<colgroup span="1" style="width:66.6%; font: normal small \'うずらフォント\', \'MS ゴシック\'">',
+	    		'<thead>',
+	    		'	<tr><th>', references[system_lang][1][0], '</th><th>', references[system_lang][1][platform_num], '</th></tr>',
+	    		'</thead>',
+	    		'<tbody>',
+	    		'	<tr><td>', references[system_lang][2][0], '</td><td>', references[system_lang][2][platform_num], '</td></tr>',
+	    		'	<tr><td>', references[system_lang][3][0], '</td><td>', references[system_lang][3][platform_num], '</td></tr>',
+	    		'	<tr><td>', references[system_lang][4][0], '</td><td>', references[system_lang][4][platform_num], '</td></tr>',
+	    		'	<tr><td>', references[system_lang][5][0], '</td><td>', references[system_lang][5][platform_num], '</td>></tr>',
+	    		'	<tr><td>', references[system_lang][6][0], '</td><td>', references[system_lang][6][platform_num], '</td></tr>',
+	    		'	<tr><td>', references[system_lang][7][0], '</td><td>', references[system_lang][7][platform_num], '</td></tr>',
+	    		'	<tr><td>', references[system_lang][8][0], '</td><td>', references[system_lang][8][platform_num], '</td></tr>',
+	    		'</tbody>',
+	    	'</table>'].join(""));
+		this.quick_reference.x = 0;
+		this.quick_reference.y = y + height / 5;
+		this.quick_reference.width = x;
+	},
+    
+    setPlayerPieces : function(){
+        //あらかじめ設定しておいたピースをプレイヤーが操作するピースに設定し、その他のパラメーターを設定する
+        this.cur_falling_pieces = new PlayerPieces(this.next_appearing_pieces.pieces, this.field.x + this.size_of_block.width * 5,
+    			this.field.y, this.next_appearing_pieces.width, this.next_appearing_pieces.height, this.size_of_block.height / this.pieces_moving_rate);
+		
+        this.cur_falling_pieces.pieces = this.cur_falling_pieces.pieces.filter(function(piece){
+            return(piece != null);    //nullのピースは削除する
+        });
+        
+        this.cur_falling_pieces.pieces.forEach(function(piece){
+			game.currentScene.addChild(piece);
+		});
+        
+        this.num_successive_scoring = 1;
+    },
+    
+    setPieces : function(pieces){
+        this.cur_falling_pieces.pieces.forEach(function(piece) {
+            game.currentScene.removeChild(piece);
+        });
+        pieces.forEach(function(piece) {
+            game.currentScene.addChild(piece);
+        });
+        this.cur_falling_pieces.pieces = pieces;
+        var tmp = this.cur_falling_pieces.width;
+        this.cur_falling_pieces.width = this.cur_falling_pieces.height;
+        this.cur_falling_pieces.height = tmp;
+    },
+    
+    /**
+     * 一気に着地するまでピースを下に移動させる
+     */
+    landOnPiece : function(piece){
+		piece.position.y = Math.round(piece.position.y);
+        this.field.removePiece(piece);
+		for(var i = 1; this.field.tryToMove(piece.position, 0, i); ++i) ;
+		piece.position.y += (i - 1);
+		this.field.setPieceToField(piece);
+	    piece.real_coords.y = this.coordsAt('y', piece.position.y);
+		piece.position = this.convertCoordinatesToPosition(piece.real_coords);
+		piece.setCoords();
+	},
+
+	/**
+	 * 次に出現するピースを設定する
+	 */
+	setNextAppearingPieces : function(pieces){
+		this.next_appearing_pieces = pieces;
+        this.is_new_pieces_set = true;
+        if(this.next_piece_label){
+            var next_pieces = pieces.pieces.deepCopy();
+		    this.next_piece_label.setPieces(next_pieces, this.size_of_block);	//次に出現するピース欄に次のピースのコピーを渡す
+        }
+	},
+
+	/**
+	 * 絶対座標を相対座標に変換する
+	 */
+	positionAt : function(type, value){
+		switch(type){
+		case 'x' :
+			return ((value - this.field.x) / this.size_of_block.width);
+			break;
+
+		case 'y' :
+			return ((value - this.field.y) / this.size_of_block.height);
+			break;
+		}
+	},
+
+	/**
+	 * 相対座標を絶対座標に変換する
+	 */
+	coordsAt : function(type, value){
+		switch(type){
+		case 'x' :
+			return (this.field.x + this.size_of_block.width * value);
+			break;
+
+		case 'y' :
+			return (this.field.y + this.size_of_block.height * value);
+			break;
+		}
+	},
+
+	calcPiecesAverageCoordinates : function(pieces){
+		var average_coords = {x : 0, y : 0};
+		pieces.forEach(function(piece){
+			average_coords.x += piece.real_coords.x;
+			average_coords.y += piece.real_coords.y;
+		});
+		average_coords.x /= pieces.length;
+		average_coords.y /= pieces.length;
+		return average_coords;
+	},
+
+	/**
+	 * 画面の厳密な座標系からパネル内のローカル座標系へ座標変換する
+	 */
+	convertCoordinatesToPosition : function(piece_real_coords){
+		return {x : this.positionAt('x', piece_real_coords.x), y : this.positionAt('y', piece_real_coords.y)};
+	},
+
+	/**
+	 * ピース内のローカル座標系からパネルのローカル座標系へ座標変換する
+	 */
+	convertPositionLocalToGlobal : function(position_in_shape){
+		return {x : this.positionAt('x', this.cur_falling_pieces.x) + position_in_shape.x,
+        y : this.positionAt('y', this.cur_falling_pieces.y) + position_in_shape.y};
+	},
+
+	/**
+	 * パネル内のローカル座標系から画面の厳密な座標系へ座標変換する
+	 */
+	convertPositionToCoordinates : function(position_in_shape){
+		return {x : this.cur_falling_pieces.x + this.size_of_block.width * position_in_shape.x,
+		y : this.cur_falling_pieces.y + this.size_of_block.height * position_in_shape.y};
+	}
+});
 
 var Manager = enchant.Class.create({
     initialize : function(stage){
@@ -689,12 +993,9 @@ var XmlManager = enchant.Class.create(Manager, {
 		var http_obj = new XMLHttpRequest(), http_obj2 = new XMLHttpRequest();
 		var definitions = [], headers = [], max_nums = {}, texts = null, expr_evaluator = new ExpressionEvaluator();
 		var variable_store = new VarStore();
-		this.pieces = null;
-		this.average_coords = 0;
 		var now = new Date();
 		variable_store.addVar("now", {year : now.getFullYear(), month : now.getMonth() + 1, date : now.getDate(), day : now.getDay(),
 			hour : now.getHours()}, true);
-		this.panel_bottom = 0;
 
 		http_obj.onload = function(){
 			var squeezeValues = function(elem){
@@ -707,7 +1008,7 @@ var XmlManager = enchant.Class.create(Manager, {
 			};
             
             var getKeyString = function(tag){
-                return tag["with"] && [tag.type, "_with_", tag["with"]].join("") || tag.type;
+                return tag["with"] && [tag.type, "_with_", tag['with']].join("") || tag.type;
             };
             
             var createObjFromChild = function(type, obj, elem){    //DOMツリーをたどってタグをオブジェクト化する
@@ -717,10 +1018,13 @@ var XmlManager = enchant.Class.create(Manager, {
 				if(type != "header" && elem.childElementCount !== 0){
 					var content = createObjFromChild(type, [], elem.firstElementChild, child_obj);
 					child_obj['children'] = content;
+                    child_obj['name'] = content[0].name;
+                    child_obj['with'] = content[0]['with'];
 				}
 
-				child_obj['type'] = elem.tagName;
+                child_obj['type'] = elem.tagName;
 				if(elem.textContent.length !== 0){child_obj['text'] = elem.textContent.replace(/[\t\n\r]+/g, "");}
+                if(!child_obj['name']){child_obj['name'] = child_obj.type;}
                 if(child_obj.num){
                     var key = child_obj.children && getKeyString(content[0]) || getKeyString(child_obj);
                     max_nums[key] = child_obj.num;
@@ -736,7 +1040,6 @@ var XmlManager = enchant.Class.create(Manager, {
             
             headers.forEach(function(header, index, array){    	//ヘッダー部分の要素をオブジェクトの形に変換する
 				switch(header.type){
-				case "characters" :
 				case "colors" :
 					var tags = header.tags.split(/\s*,\s*/);
 					var bodies = header.text.split(/\s*;\s*/), name = header.type.slice(0, header.type.length-1);
@@ -748,7 +1051,6 @@ var XmlManager = enchant.Class.create(Manager, {
 					break;
 
 				case "paths" :
-				case "settings" :
 					var names = header.names.split(/\s*,\s*/), bodies = header.text.split(/\s*;\s*/);
 					array[index] = {type : header.type};
 					for(var i = 0; i < names.length; ++i){
@@ -789,7 +1091,7 @@ var XmlManager = enchant.Class.create(Manager, {
 		this.getDefinitions = function(name, target){
 			if(target != undefined){
 				var results = definitions.filter(function(definition){
-					return(definition.name == name && definition['with'] == target);
+					return(definition.name.search(name, "i") != -1 && definition['with'] && definition['with'].search(target, "i") != -1);
 				});
 				if(results.length != 0){
                     return results;
@@ -797,7 +1099,7 @@ var XmlManager = enchant.Class.create(Manager, {
 			}
             
 			var results = definitions.filter(function(definition){
-				return(definition.name == name && definition['with'] == undefined);
+				return(definition.name.search(name, "i") != -1 && definition['with'] == undefined);
 			});
 
 			return results;
@@ -841,25 +1143,23 @@ var XmlManager = enchant.Class.create(Manager, {
 
 		this.verify = function(condition){
 			if(condition == undefined){return true;}
-			return expr_evaluator.eval(condition.replace(/&lt;/g, "<").replace(/&gt;/g, ">"));
+			return expr_evaluator.eval(condition);
 		}
 	}
 });
 
 /**
- * タグ「マネージャー」と言いながらその実態はタグインタプリター。InterpretTagTaskの要請を受けてタグを解釈し
+ * タグ「マネージャー」と言いながらその実態はタグインタプリター。Taskからの要請を受けてタグを解釈し
  * 適切なオブジェクトを生成、他のマネージャーにセットする
  */
 var TagManager = enchant.Class.create(Manager, {
     initialize : function(stage){
         Manager.call(this, stage);
         
-        this.last_obj = null;
         this.xml_manager = null;
         this.label_manager = null;
         this.sound_manager = null;
         this.effect_manager = null;
-        this.panel = null;
         this.info = null;
         this.max_end_time = 0;
         
@@ -878,7 +1178,6 @@ var TagManager = enchant.Class.create(Manager, {
             },
             
             setStyle : function(obj, str){
-                //var style = tag.style ;//|| this.xml_manager.getHeader("profile", tag.type).style;
     	        var styles = this.manager.stage.interpretStyle(str);
 
 		        styles.forEach(function(style){
@@ -899,7 +1198,7 @@ var TagManager = enchant.Class.create(Manager, {
                 if(!this.xml_manager){this.xml_manager = this.manager.xml_manager;}
                 if(!this.label_manager){this.label_manager = this.manager.label_manager;}
                 
-                var position = {x : this.manager.info.x && this.manager.info.x || 0, y : 0};
+                var position = {x : this.manager.info.x || 0, y : 0};
     			var style = this.xml_manager.replaceVars(tag_obj.style);
 				setRulerStyle(style);
 				var text = tag_obj.text.slice(0), num_lines = {val : 1};
@@ -910,8 +1209,8 @@ var TagManager = enchant.Class.create(Manager, {
 
 				var label = this.createNewLabel(style, position.x, position.y, 
                     (this.manager.info.width && size.width >= this.manager.info.width) ? this.manager.info.width : size.width, text);
-				this.label_manager.add(label, game.frame + tag_obj.start_time, game.frame + tag_obj.end_time);
-                this.manager.setMaxEndTime(tag_obj.end_time);
+				this.label_manager.add(label, tag_obj.id, game.frame + tag_obj.start_time, game.frame + tag_obj.end_time);
+                this.manager.setMaxEndTime(tag_obj.end_time || 0);
                 return label;
             }
         });
@@ -933,34 +1232,34 @@ var TagManager = enchant.Class.create(Manager, {
                 if(!this.xml_manager){this.xml_manager = this.manager.xml_manager;}
                 if(!this.effect_manager){this.effect_manager = this.manager.effect_manager;}
                 
-                switch(tag_obj.type){
-                case "PieceFrame":
+                switch(tag_obj.effect){
+                case "PieceFrameEffect":
         			var frame = this.xml_manager.replaceVars(tag_obj.frame);
     				this.effect_manager.add(new PieceFrameEffect(this.objs, frame, game.frame + tag_obj.start_time));
     				break;
     
-    			case "OpacityChange":
+    			case "OpacityChangeEffect":
     				this.effect_manager.add(new OpacityChangeEffect(this.objs, tag_obj.value, game.frame + tag_obj.start_time));
     				break;
     
-    			case "FadeIn":
+    			case "FadeInEffect":
     				this.effect_manager.add(new FadeInEffect(this.objs, game.frame + tag_obj.start_time, game.frame + tag_obj.end_time,
                         tag_obj.rate));
     				break;
     
-    			case "FadeOut":
+    			case "FadeOutEffect":
     				this.effect_manager.add(new FadeOutEffect(this.objs, game.frame + tag_obj.start_time, game.frame + tag_obj.end_time,
                         tag_obj.rate));
     				break;
     
-    			case "TimeIndependentVibration":
+    			case "RandomVibrationEffect":
     				this.effect_manager.add(new TimeIndependentVibrationEffect(this.objs[0], this.objs[0].x - tag_obj.amplitude_x
     						, this.objs[0].x + tag_obj.amplitude_x, this.objs[0].y - tag_obj.amplitude_y, this.objs[0].y + tag_obj.amplitude_y
     						, tag_obj.max_rate, game.frame + tag_obj.end_time, game.frame + tag_obj.start_time));
     				break;
 			    }
                 
-                this.manager.setMaxEndTime(tag_obj.end_time);
+                this.manager.setMaxEndTime(tag_obj.end_time || 0);
                 return null;
             }
         });
@@ -994,13 +1293,17 @@ var TagManager = enchant.Class.create(Manager, {
         return this.max_end_time;
     },
     
+    resetMaxEndTime : function(){
+        this.max_end_time = 0;
+    },
+    
     interpretX : function(val, width){
     	if(this.info.x){
             return this.info.x;
     	}else if(val == "average"){
 			return Math.floor(this.info.average_coords.x);
 		}else if(val == "average with margin"){
-			return (this.info.average_coords.x + width > game.width) ? game.width - width : this.info.average_coords.x;
+			return (this.info.average_coords.x + width > this.info.panel_right) ? this.info.panel_right - width : this.info.average_coords.x;
 		}
 
 		return val;
@@ -1011,7 +1314,7 @@ var TagManager = enchant.Class.create(Manager, {
 			return Math.floor(this.info.average_coords.y);
 		}else if(val == "average with margin"){
 			return (this.info.average_coords.y + height > game.height) ? game.height - height :
-				(this.info.average_coords.y >= (this.panel.y + this.panel.height) / 2) ? this.info.average_coords.y - height : 
+				(this.info.average_coords.y >= this.info.panel_center_y) ? this.info.average_coords.y - height : 
                 this.info.average_coords.y + height;
 		}
 
@@ -1023,20 +1326,21 @@ var TagManager = enchant.Class.create(Manager, {
         if(!this.label_manager){this.label_manager = this.stage.getManager("label");}
         if(!this.sound_manager){this.sound_manager = this.stage.getManager("sound");}
         if(!this.effect_manager){this.effect_manager = this.stage.getManager("effect");}
-        if(!this.panel){this.panel = this.stage.getPanel();}
-        this.max_end_time = 0;
         this.info = info;
         
         tag_objs.forEach(function(tag_obj){
-            var label = null, types = tag_obj.type.toLowerCase().split(/\s*\+\s*/);
+            if(tag_obj.num != -1 && tag_obj.type != getPropertyName(PieceTypes, pieces[0].type)){return;}
+            
+            var label = null, tmp_tag = tag_obj.copyFrom(), types = tag_obj.effect.toLowerCase().split(/\s*\+\s*/);
             types.forEach(function(type){
+                var interpreter_type = type;
                 if(type.search(/effect$/) != -1){
-                    tag_obj.type = type.substring(0, -6);
-                    type = "effect";
+                    interpreter_type = "effect";
+                    tag_obj.effect = type;
                     this.child_interpreters["effect"].setObjs(label && [label] || pieces);
                 }
                 
-                label = this.child_interpreters[type].interpret(tag_obj);
+                label = this.child_interpreters[interpreter_type].interpret(tmp_tag);
             }, this);
         }, this);
     }
@@ -1074,14 +1378,22 @@ var LabelManager = enchant.Class.create(Manager, {
         Manager.call(this, stage);
         
 		this.labels = [];
+        this.next_id = 0;
 	},
 
-	add : function(label, start_time, end_time){
-		this.labels.push({obj : label, start_time : (isNaN(start_time)) ? 0 : start_time, end_time : end_time, is_added : false});
+	add : function(label, id, start_time, end_time){
+		this.labels.push({obj : label, start_time : (isNaN(start_time)) ? 0 : start_time, end_time : end_time, is_added : false,
+            id : id || this.next_id++});
 	},
+    
+    remove : function(id){
+        this.labels.every(function(label, index){
+            if(label.id == id){this.labels.splice(index, 1);}
+        }, this);
+    },
 
 	update : function(){
-        if(!this.is_available || this.stage.is_in_game){return;}
+        if(!this.is_available || !this.stage.is_in_game){return;}
         
 		this.labels.forEach(function(label){
 			if(!label.is_added && label.start_time <= game.frame){
@@ -1099,6 +1411,44 @@ var LabelManager = enchant.Class.create(Manager, {
 	}
 });
 
+var ImageManager = enchant.Class.create(Manager, {
+    initialize : function(stage){
+        Manager.call(this, stage);
+        
+        this.images = [];
+        this.next_id = 0;
+    },
+    
+    add : function(image, id, start_time, end_time){
+        this.images.push({obj : image, start_time : (isNaN(start_time) ? 0 : start_time), end_time : isNaN(end_time) ? 0 : end_time, 
+            is_added : false, id : id || this.next_id++});
+    },
+    
+    remove : function(id){
+        this.images.every(function(image, index){
+            if(image.id == id){this.images.splice(index, 1);}
+        }, this);
+    },
+    
+    update : function(){
+        if(!this.is_available || !this.stage.is_in_game){return;}
+        
+        this.images.forEach(function(image){
+            if(!image.is_added && image.start_time <= game.frame){
+                game.currentScene.addChild(image.obj);
+                image.is_added = true;
+            }
+            if(image.end_time <= game.frame){
+                game.currentScene.removeChild(image.obj);
+            }
+        });
+        
+        this.images = this.images.filter(function(image){
+            return(image.end_time == 0 || image.end_time > game.frame);
+        })
+    }
+})
+
 /**
  * エフェクトマネージャー
  */
@@ -1109,11 +1459,11 @@ var EffectManager = enchant.Class.create(Manager, {
 		this.effects = [];
 	},
 
-	addEffect : function(effect){
+	add : function(effect){
 		this.effects.push(effect);
 	},
 
-	removeEffect : function(piece){
+	remove : function(piece){
 		this.effects.forEach(function(effect, index, array){
 			if(effect.hasOwnProperty('target') && effect.target == piece){
 				delete array[index];
@@ -1122,7 +1472,7 @@ var EffectManager = enchant.Class.create(Manager, {
 	},
 
 	update : function(){
-        if(!this.is_available || !this.is_in_game){return;}
+        if(!this.is_available || !this.stage.is_in_game){return;}
         
 		this.effects = this.effects.filter(function(effect){
 			return (game.frame <= effect.end_time || effect.end_time === 0);
@@ -1136,7 +1486,7 @@ var EffectManager = enchant.Class.create(Manager, {
 
 /**
  * エフェクトの基底クラス
- * end_timeに0をセットすると、明示的にEffectManagerのremoveEffectを呼び出して削除しなければ、そのエフェクトはいつまでも効果が持続することになる
+ * end_timeに0をセットすると、明示的にEffectManagerのremoveを呼び出して削除しなければ、そのエフェクトはいつまでも効果が持続することになる
  */
 var Effect = enchant.Class.create({
 	initialize : function(time_to_end_affecting, time_to_start_affecting, is_dummy){
@@ -1254,275 +1604,10 @@ var OpacityChangeEffect = enchant.Class.create(Effect, {
 	}
 });
 
-var PlayerPieces = enchant.Class.create({
-	initialize : function(pieces, x, y, width, height, v_y){
-		this.pieces = pieces;
-		this.width = width;
-		this.height = height;
-		this.x = x;
-		this.y = y;
-		this.v_y = v_y;
-        this.is_movable = true;
-	}
-});
-
-var Panel = enchant.Class.create(enchant.Sprite, {
-	initialize : function(width, height, x, y, xml_manager){
-		enchant.Sprite.call(this, width, height);
-
-		this.x = x;
-		this.y = y;
-		this.pieces = [];	//メインの格子状のエリアに配置されている全ピース
-		for(var i = 0; i < NUM_VERTICAL_BLOCKS * NUM_HORIZONTAL_BLOCKS; ++i){this.pieces.push(null);}
-		this.pieces_moving_rate = 30;	    //現在のピースが1ます分落下する頻度
-		this.next_speed_up_score = 10000;	//サバイバルモードで次にピースの落下速度が上がる得点
-		this.cur_falling_pieces = null;	    //現在プレイヤーが操作しているシェイプの情報
-		this.size_of_block = {width : 32, height : 32};		//1ますのサイズ
-		this.next_appearing_pieces = null;		            //次に出現するシェイプの情報
-		this.next_piece_label = new NextPieceLabel(0, this.y, this.x, this.height);
-		this.score_label = new Score();					    //スコアを画面に表示するラベル
-		this.num_successive_disappearance = 1;				//現在の連鎖の数
-		this.shows_conversation = false;
-        
-        var texts = xml_manager.getText("texts");
-		this.home_button = new enchant.Label(texts.common.home_button);	//ホームに戻るリンクボタン
-		this.home_button.x = 0;
-		this.home_button.y = this.y + (this.height - 10);
-		this.home_button.width = this.x / 2;
-		this.manual_button = new enchant.Label(texts.common.manual_base.replace(/TARGET_URL/, texts[system_lang].panel.manual_link));		//マニュアルを表示するボタン
-		this.manual_button.x = this.x / 2;
-		this.manual_button.y = this.y + (this.height - 10);
-		this.manual_button.width = this.x / 2;
-
-		var TOUCH_ENABLED = (function() {
-		    var div = document.createElement('div');
-		    div.setAttribute('ontouchstart', 'return');
-		    return typeof div.ontouchstart == 'function';
-		})();
-
-		var platform_num = (TOUCH_ENABLED) ? 2 : 1, references = xml_manager.getText("reference");
-		this.quick_reference = new enchant.Label(
-            ['<table>',
-	    		'<caption>', references[system_lang][0][0], '</caption>',
-	    		'<colgroup span="1" style="width:33.3%; font: normal small \'うずらフォント\', \'MS ゴシック\'">',
-	    		'<colgroup span="1" style="width:66.6%; font: normal small \'うずらフォント\', \'MS ゴシック\'">',
-	    		'<thead>',
-	    		'	<tr><th>', references[system_lang][1][0], '</th><th>', references[system_lang][1][platform_num], '</th></tr>',
-	    		'</thead>',
-	    		'<tbody>',
-	    		'	<tr><td>', references[system_lang][2][0], '</td><td>', references[system_lang][2][platform_num], '</td></tr>',
-	    		'	<tr><td>', references[system_lang][3][0], '</td><td>', references[system_lang][3][platform_num], '</td></tr>',
-	    		'	<tr><td>', references[system_lang][4][0], '</td><td>', references[system_lang][4][platform_num], '</td></tr>',
-	    		'	<tr><td>', references[system_lang][5][0], '</td><td>', references[system_lang][5][platform_num], '</td>></tr>',
-	    		'	<tr><td>', references[system_lang][6][0], '</td><td>', references[system_lang][6][platform_num], '</td></tr>',
-	    		'	<tr><td>', references[system_lang][7][0], '</td><td>', references[system_lang][7][platform_num], '</td></tr>',
-	    		'	<tr><td>', references[system_lang][8][0], '</td><td>', references[system_lang][8][platform_num], '</td></tr>',
-	    		'</tbody>',
-	    	'</table>'].join(""));
-		this.quick_reference.x = 0;
-		this.quick_reference.y = this.y + this.height / 5;
-		this.quick_reference.width = this.x;
-        
-        var panel_background = new enchant.Surface(this.width, this.height), self = this;
-
-    	(function(){
-			var ctx = panel_background.context;
-			ctx.fillStyle = "#ebebeb";
-			ctx.fillRect(0, 0, self.width, self.height);
-			ctx.strokeStyle = "rgb(0, 0, 0)";
-			ctx.beginPath();
-			ctx.moveTo(0, 0);
-			ctx.lineTo(self.width, 0);
-			ctx.lineTo(self.width, self.height);
-			ctx.lineTo(0, self.height);
-			ctx.closePath();
-			ctx.stroke();
-
-			ctx.strokeStyle = "rgb(0, 0, 0)";		//パネル内にグリッドを描く
-			ctx.beginPath();
-			for(var x = self.size_of_block.width; x < self.width; x += self.size_of_block.width){
-				ctx.moveTo(x, 0);
-				ctx.lineTo(x, self.height);
-			}
-			ctx.stroke();
-			ctx.beginPath();
-			for(var y = self.size_of_block.height; y < self.height; y += self.size_of_block.height){
-				ctx.moveTo(0, y);
-				ctx.lineTo(self.width, y);
-			}
-			ctx.stroke();
-		})();
-        
-		this.image = panel_background;
-	},
-    
-    setPlayerPieces : function(){
-        //あらかじめ設定しておいたピースをプレイヤーが操作するピースに設定し、その他のパラメーターを設定する
-        this.cur_falling_pieces = new PlayerPieces(this.next_appearing_pieces.pieces, this.x + this.size_of_block.width * 5,
-    			this.y, this.next_appearing_pieces.width, this.next_appearing_pieces.height, this.size_of_block.height / this.pieces_moving_rate);
-		
-        this.cur_falling_pieces.pieces = this.cur_falling_pieces.pieces.filter(function(piece){
-            return(piece != null);    //nullのピースは削除する
-        });
-        
-        this.cur_falling_pieces.pieces.forEach(function(piece){
-			game.currentScene.addChild(piece);
-		});
-        
-        this.num_successive_disappearance = 1;
-    },
-    
-    setPieces : function(pieces){
-        this.cur_falling_pieces.pieces.forEach(function(piece) {
-            game.currentScene.removeChild(piece);
-        });
-        pieces.forEach(function(piece) {
-            game.currentScene.addChild(piece);
-        });
-        this.cur_falling_pieces.pieces = pieces;
-        var tmp = this.cur_falling_pieces.width;
-        this.cur_falling_pieces.width = this.cur_falling_pieces.height;
-        this.cur_falling_pieces.height = tmp;
-    },
-
-	/**
-	 * 引数のピースの周りに存在するピースの参照を追加する
-	 */
-	addNeighborsReference : function(piece){
-		[{x : -1, y : 0}, {x : 1, y : 0}, {x : 0, y : -1}, {x : 0, y : 1}].forEach(function(pos, index){
-			piece.neighbors[index] = this.getPieceOnPanelAt(piece.position.x + pos.x, piece.position.y + pos.y);
-		}, this);
-	},
-
-	/**
-	 * 次に出現するピースを設定する
-	 */
-	setNextAppearingPieces : function(pieces){
-		this.next_appearing_pieces = pieces;
-        var next_pieces = pieces.pieces.deepCopy();
-		this.next_piece_label.setPieces(next_pieces, this.size_of_block);	//次に出現するピース欄に次のピースのコピーを渡す
-	},
-
-	/**
-	 * 絶対座標を相対座標に変換する
-	 */
-	positionAt : function(type, value){
-		switch(type){
-		case 'x' :
-			return ((value - this.x) / this.size_of_block.width);
-			break;
-
-		case 'y' :
-			return ((value - this.y) / this.size_of_block.height);
-			break;
-		}
-	},
-
-	/**
-	 * 相対座標を絶対座標に変換する
-	 */
-	coordsAt : function(type, value){
-		switch(type){
-		case 'x' :
-			return (this.x + this.size_of_block.width * value);
-			break;
-
-		case 'y' :
-			return (this.y + this.size_of_block.height * value);
-			break;
-		}
-	},
-
-	/**
-	 * パネル上の指定した位置にピースがあるかどうかを返す
-	 */
-	anyPieceExistsAt : function(x, y){
-		return isInRange(0, NUM_HORIZONTAL_BLOCKS, x) && isInRange(0, NUM_VERTICAL_BLOCKS, y)
-		&& (this.pieces[NUM_HORIZONTAL_BLOCKS * y + x] != null);
-	},
-
-	/**
-	 * 指定した位置のピースの参照を返す
-	 * 内部でvalidityを確かめているので使用前にanyPieceExistsAtを呼び出す必要はない
-	 */
-	getPieceOnPanelAt : function(x, y){
-		return (isInRange(0, NUM_HORIZONTAL_BLOCKS, x) && isInRange(0, NUM_VERTICAL_BLOCKS, y))
-		? this.pieces[NUM_HORIZONTAL_BLOCKS * y + x] : null;
-	},
-
-	/**
-	 * 引数のピースをパネル上に固定する
-	 */
-	setPieceToPanel : function(piece){
-		this.pieces[NUM_HORIZONTAL_BLOCKS * piece.position.y + piece.position.x] = piece;
-	},
-
-	/**
-	 * 指定したピースをパネルから取り除く
-	 */
-	removePiece : function(piece){
-		this.pieces[NUM_HORIZONTAL_BLOCKS * piece.position.y + piece.position.x] = null;
-	},
-
-	calcPiecesAverageCoordinates : function(pieces){
-		var average_coords = {x : 0, y : 0};
-		pieces.forEach(function(piece){
-			average_coords.x += piece.real_coords.x;
-			average_coords.y += piece.real_coords.y;
-		});
-		average_coords.x /= pieces.length;
-		average_coords.y /= pieces.length;
-		return average_coords;
-	},
-    
-    /**
-     * ピースが指定した方向に移動可能か返す
-	 * (x, y)は移動する方向を表すベクトル
-	 */
-	tryToMove : function(piece_pos, x, y){
-		return (isInRange(0, NUM_HORIZONTAL_BLOCKS, Math.floor(piece_pos.x + x)) &&
-			    isInRange(0, NUM_VERTICAL_BLOCKS, Math.floor(piece_pos.y + y)) &&
-				!this.anyPieceExistsAt(Math.floor(piece_pos.x + x), Math.floor(piece_pos.y + y)));
-	},
-
-	/**
-	 * 画面の厳密な座標系からパネル内のローカル座標系へ座標変換する
-	 */
-	convertCoordinatesToPosition : function(piece_real_coords){
-		return {x : this.positionAt('x', piece_real_coords.x), y : this.positionAt('y', piece_real_coords.y)};
-	},
-
-	/**
-	 * ピース内のローカル座標系からパネルのローカル座標系へ座標変換する
-	 */
-	convertPositionLocalToGlobal : function(position_in_shape){
-		return {x : this.positionAt('x', this.cur_falling_pieces.x) + position_in_shape.x,
-        y : this.positionAt('y', this.cur_falling_pieces.y) + position_in_shape.y};
-	},
-
-	/**
-	 * パネル内のローカル座標系から画面の厳密な座標系へ座標変換する
-	 */
-	convertPositionToCoordinates : function(position_in_shape){
-		return {x : this.cur_falling_pieces.x + this.size_of_block.width * position_in_shape.x,
-		y : this.cur_falling_pieces.y + this.size_of_block.height * position_in_shape.y};
-	}
-});
-
 var TaskBase = enchant.Class.create({
     initialize : function(task_manager, name){
         this.task_manager = task_manager;
         this.name = name;
-    }
-});
-
-var PanelTask = enchant.Class.create(TaskBase, {
-    initialize : function(task_manager){
-        TaskBase.call(this, task_manager, "Panel");
-    },
-    
-    execute : function(){
-        
     }
 });
 
@@ -1535,10 +1620,10 @@ var ShapeTask = enchant.Class.create(TaskBase, {
 });
 
 var FallShapeTask = enchant.Class.create(ShapeTask, {
-    initialize : function(task_manager, shape){
+    initialize : function(task_manager, shape, panel){
         ShapeTask.call(this, task_manager, shape, "FallShape");
         
-        this.panel = task_manager.stage.getPanel();
+        this.panel = panel;
     },
     
     execute : function(){
@@ -1551,8 +1636,15 @@ var FallShapeTask = enchant.Class.create(ShapeTask, {
 			piece.setCoords();
 		}, this);
         
+        if(game._debug && this.is_in_game && (game.frame % 5 == 0)){
+			console.log(["[", game.frame, "] "].join(""));
+			this.panel.cur_falling_pieces.pieces.forEach(function(piece, index){
+				if(piece){console.log([index, ":", piece.logPosition()].join(""));}
+			});
+		}
+        
         if(this.target.pieces.every(function(piece){
-        	if(!this.panel.tryToMove(piece.position, 0, 1)){	//自分の下1ますが空いているかどうか確かめる
+        	if(!this.panel.field.tryToMove(piece.position, 0, 1)){	//自分の下1ますが空いているかどうか確かめる
 				if(piece.position.y <= 2){		//上から数えて3段目までピースがたまってしまっていたら、ゲームオーバー
 					var gameover_scene = new GameOver(this.task_manager.stage.getManager("xml"), this.panel.score_label.getScore());
 					return false;
@@ -1563,23 +1655,23 @@ var FallShapeTask = enchant.Class.create(ShapeTask, {
 					console.log(piece.logPosition());
 				}
 
-                this.task_manager.add(new DropPiecesTask(this.task_manager, this.target.pieces));
+                this.task_manager.add(new DropPiecesTask(this.task_manager, this.target.pieces, this.panel));
                 this.target.is_movable = false;
                 return false;
 			}
 
 			return true;
 		}, this)){      //everyがtrueを返したらまだ地表に達しそうなピースはなかったという事。なので次のフレームも同じ事を繰り返す
-    	    this.task_manager.add(new FallShapeTask(this.task_manager, this.target));
+    	    this.task_manager.add(this);
 		}
     }
 });
 
 var MoveShapeTask = enchant.Class.create(ShapeTask, {
-    initialize : function(task_manager, shape, diff_x){
+    initialize : function(task_manager, shape, diff_x, panel){
         ShapeTask.call(this, task_manager, shape, "MoveShape");
         
-        this.panel = task_manager.stage.getPanel();
+        this.panel = panel;
         this.diff_x = diff_x;
     },
     
@@ -1588,7 +1680,7 @@ var MoveShapeTask = enchant.Class.create(ShapeTask, {
         
         var tmp_x = this.target.x + this.panel.size_of_block.width * this.diff_x;
     	this.target.x = this.target.pieces.every(function(piece){
-			return (this.panel.tryToMove(piece.position, this.diff_x, 0) && this.panel.tryToMove(piece.position, this.diff_x, 1));
+			return (this.panel.field.tryToMove(piece.position, this.diff_x, 0) && this.panel.field.tryToMove(piece.position, this.diff_x, 1));
 		}, this) ? tmp_x : this.target.x;
     }
 });
@@ -1611,16 +1703,11 @@ var RotateShapeTask = enchant.Class.create(ShapeTask, {
 	        piece.position_in_shape.y = Math.round((!this.is_clockwise) ? -(before.x * 1) : before.x * 1); //cos(pi/2)=0,sin(pi/2)=1となるため
 	        piece.position = this.panel.convertPositionLocalToGlobal(piece.position_in_shape);
 	
-	        if (!this.is_clockwise) {
-	            piece.neighbors.swapAntiClockwise();
-	        } else {
-	            piece.neighbors.swapClockwise();
-	        }
 	        return piece;
 	    }, this);
 	
 	    if (rotated_pieces.every(function(piece) {
-	        return (this.panel.tryToMove(piece.position, 0, 0) && this.panel.tryToMove(piece.position, 0, 1));
+	        return (this.panel.field.tryToMove(piece.position, 0, 0) && this.panel.field.tryToMove(piece.position, 0, 1));
 	    }, this)) {     //無事、すべてのピースが回転先へ移動できることが確認できたら、この移動を確定させる
 	        this.panel.setPieces(rotated_pieces);
 	    }
@@ -1659,7 +1746,7 @@ var CreateShapeTask = enchant.Class.create(TaskBase, {
     
     execute : function(){
         this.panel.setPlayerPieces();
-        this.task_manager.add(new FallShapeTask(this.task_manager, this.panel.cur_falling_pieces));
+        this.task_manager.add(new FallShapeTask(this.task_manager, this.panel.cur_falling_pieces, this.panel));
         this.task_manager.stage.getManager("input").is_available = true;
 
 		//乱数をつかって次のピースの形を決め、初期位置を設定しておく
@@ -1676,48 +1763,34 @@ var PieceTask = enchant.Class.create(TaskBase, {
 });
 
 var DropPiecesTask = enchant.Class.create(PieceTask, {
-    initialize : function(task_manager, pieces){
+    initialize : function(task_manager, pieces, panel){
        PieceTask.call(this, task_manager, pieces, "DropPieces");
        
-       this.panel = task_manager.stage.getPanel();
+       this.panel = panel;
        this.input_manager = task_manager.stage.getManager("input");
        this.effect_manager = task_manager.stage.getManager("effect");
     },
-    
-    /**
-     * 一気に着地するまでピースを下に移動させる
-     */
-	landOnPiece : function(piece){
-		piece.position.y = Math.round(piece.position.y);
-		for(var i = 1; this.panel.tryToMove(piece.position, 0, i); ++i) ;
-		piece.position.y += (i - 1);
-		this.panel.setPieceToPanel(piece);
-	    piece.real_coords.y = this.panel.coordsAt('y', piece.position.y);
-		piece.position = this.panel.convertCoordinatesToPosition(piece.real_coords);
-		piece.setCoords();
-	},
     
     execute : function(){
 		this.targets.sort(function(lhs, rhs){		//下側にある要素を先に調べるためｙ座標の大きい順で並べ替える
             return (lhs.position.y > rhs.position.y) ? -1 :
 				(lhs.position.y < rhs.position.y) ? 1 : 0;
 		}).forEach(function(piece){
-            this.panel.removePiece(piece);
     		piece.makeUnconnected();
 			if(piece.neighbors[0]){piece.neighbors[0].makeUnconnected();}
 			if(piece.neighbors[1]){piece.neighbors[1].makeUnconnected();}
-			this.effect_manager.removeEffect(piece);
+			this.effect_manager.remove(piece);
 			if(game._debug){
-				console.log(["the piece at", piece.logPosition(), "which is a(n) \"", getPropertyName(PieceTypes, piece.type),
+				console.log(["[", game.frame, "] the piece at", piece.logPosition(), "which is a(n) \"", getPropertyName(PieceTypes, piece.type),
 						"\" is moving to"].join(""));
 			}
             
-			this.landOnPiece(piece);
+			this.panel.landOnPiece(piece);
 			
 			if(game._debug){console.log([piece.logPosition(), "."].join(""));}
 		}, this);
 
-		this.task_manager.add(new MakePiecesDisappearTask(this.task_manager, this.targets));
+		this.task_manager.add(new MakePiecesDisappearTask(this.task_manager, this.targets, this.panel));
         this.input_manager.is_available = false;
     }
 });
@@ -1734,9 +1807,9 @@ var UpdateDisappearingPiecesTask = enchant.Class.create(PieceTask, {
     execute : function(){
         if(game.frame > this.end_time){    	//エフェクトをかけおわるフレームになったので、その後処理をする
 			this.targets.forEach(function(piece){
-				this.panel.removePiece(piece);
+				this.panel.field.removePiece(piece);
 				if(game._debug){
-                    console.log(["the piece at", piece.logPosition(), "which is a(n) \"", getPropertyName(PieceTypes, piece.type),
+                    console.log(["[", game.frame, "] the piece at", piece.logPosition(), "which is a(n) \"", getPropertyName(PieceTypes, piece.type),
 						"\" is going to disappear."].join(""));			
 				}
 				game.currentScene.removeChild(piece);
@@ -1749,7 +1822,7 @@ var UpdateDisappearingPiecesTask = enchant.Class.create(PieceTask, {
 			}
 			
             this.task_manager.add((this.moving_pieces.length) ?
-                new DropPiecesTask(this.task_manager, this.moving_pieces) :   //動くピースリストが空でなければまずそれらを落下させる
+                new DropPiecesTask(this.task_manager, this.moving_pieces, this.panel) :   //動くピースリストが空でなければまずそれらを落下させる
                 new CreateShapeTask(this.task_manager, this.panel, new PieceFactory()));    //それ以外なら次のピースを出現させる
 		}else{
     	    this.task_manager.add(this);
@@ -1758,11 +1831,11 @@ var UpdateDisappearingPiecesTask = enchant.Class.create(PieceTask, {
 });
 
 var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
-    initialize : function(task_manager, moving_pieces){
+    initialize : function(task_manager, moving_pieces, panel){
         TaskBase.call(this, task_manager, "MakePiecesDisappear");
         
         this.moving_pieces = moving_pieces;
-        this.panel = task_manager.stage.getPanel();
+        this.panel = panel;
         this.sound_manager = task_manager.stage.getManager("sound");
         this.label_manager = task_manager.stage.getManager("label");
         this.effect_manager = task_manager.stage.getManager("effect");
@@ -1781,24 +1854,24 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
 		var effects = this.xml_manager.getDefinitions(piece_type, target_type), selected_effects, selected_effect_num;
 		do{
 			var max_num = this.xml_manager.getMaxNum(piece_type, target_type);
-			selected_effect_num = mersenne.nextInt(0, max_num);
+			selected_effect_num = mersenne.nextInt(0, max_num) + 1;
 			selected_effects = effects.filter(function(definition){
 				return (definition.num == selected_effect_num && this.xml_manager.verify(definition.enable_if));
 			}, this);
-		}while(!selected_effects.length || selected_effects);
+		}while(!selected_effects || !selected_effects.length);
 
-		return selected_effects.children || [selected_effects];
+		return selected_effects[0].children || selected_effects;
 	},
     
     createBasicEffects : function(piece_type, average_coords, score){
-        return [{type : "Label", style : ["color: ", this.xml_manager.getHeader("colors", piece_type.toUpperCase()),
+        return [{effect : "Label", style : ["background-color: #ffffff; color: ", this.xml_manager.getHeader("colors", piece_type),
             "; font: large 'うずらフォント', 'MS ゴシック';"].join(""), x : Math.floor(average_coords.x - 50),
         	y : Math.floor(average_coords.y - 20), text : "+" + score, end_time : 30, num : -1},
-            {type : "Label", style : ["color: ", this.xml_manager.getHeader("colors", getPropertyName(PieceTypes,
-            this.panel.num_successive_disappearance % PieceTypes.MAX)), "; font: bold large 'うずらフォント', 'MS ゴシック';"].join(""),
+            {effect : "Label", style : ["background-color: #ffffff; color: ", this.xml_manager.getHeader("colors", getPropertyName(PieceTypes,
+            this.panel.num_successive_scoring % PieceTypes.MAX)), "; font: bold large 'うずらフォント', 'MS ゴシック';"].join(""),
             x : Math.floor(average_coords.x - 50), y : Math.floor(average_coords.y - 40),
-            text : this.panel.num_successive_disappearance + "COMBO!", end_time : 30, num : -1},
-            {type : "Sound", src : ["$paths.BANG", (this.panel.num_successive_disappearance - 1) % 8 + 1].join("")}];
+            text : this.panel.num_successive_scoring + "COMBO!", end_time : 30, num : -1},
+            {effect : "Sound", src : ["$paths.BANG", (this.panel.num_successive_scoring - 1) % 8 + 1].join(""), num : -1}];
     },
     
     execute : function(){
@@ -1807,7 +1880,7 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
             if(level > 3){return;}
             pieces.forEach(function(piece){
                 if(!piece){return;}
-                this.panel.addNeighborsReference(piece);
+                this.panel.field.addNeighborsReference(piece);
                 piece.neighbors_buffer = piece.neighbors.slice(0);
                 if(!start_searching_pieces.contains(piece) && !this.moving_pieces.contains(piece)){
                     start_searching_pieces.push(piece);
@@ -1840,7 +1913,7 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
 					if(index != -1){delete this.moving_pieces[index];}
 
 					piece.makeUnconnected();
-					this.effect_manager.removeEffect(piece);
+					this.effect_manager.remove(piece);
 
 					for(var upper = piece.neighbors[2];; upper = upper.neighbors[2]){
                         //自分の上にいるピースの中で消えてしまうもの以外をこれから動くピースリストに追加する
@@ -1851,14 +1924,15 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
 					}
 				}, this);
 
-				var score_diff = 100 * Math.pow(2, this.panel.num_successive_disappearance) * group.length;
+				var score_diff = 100 * Math.pow(2, this.panel.num_successive_scoring) * group.length;
 				this.panel.score_label.addScore(score_diff);	//スコアを追加する
 				var average_coords = this.panel.calcPiecesAverageCoordinates(group), piece_type = getPropertyName(PieceTypes, group[0].type);
 				this.xml_manager.getVarStore().addVar(piece_type, average_coords, true);
 				this.xml_manager.getVarStore().addVar("score", this.panel.score_label.getScore(), true);
                 var effects = this.createBasicEffects(piece_type, average_coords, score_diff);
 				effects = effects.concat(this.chooseAppropriateEffects(group));
-                this.tag_manager.interpret(group.slice(0), {average_coords : average_coords}, effects);
+                this.tag_manager.interpret(group.slice(0), {average_coords : average_coords, panel_center_y : this.panel.field.y + this.panel.field.height / 2,
+                    panel_right : this.panel.field.x + this.panel.field.width}, effects);
 				if(game._debug){console.log(["score added! ", score_diff, "points added!"].join(""));}
 			}else if(group.length == 3){		//3個の場合はカップリングを探す
 				group.forEach(function(piece){
@@ -1887,7 +1961,7 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
 						if(index != -1){delete this.moving_pieces[index];}
 
 						piece.makeUnconnected();
-						this.effect_manager.removeEffect(piece);
+						this.effect_manager.remove(piece);
 
 						for(var upper = piece.neighbors[2];; upper = upper.neighbors[2]){
                             //自分の上にいるピースの中で消えてしまうもの以外をこれから動くピースリストに追加する
@@ -1898,23 +1972,26 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
 						}
 					}, this);
 
-					var score_diff = Math.floor(75 * Math.pow(1.5, this.panel.num_successive_disappearance) * disappearing_pieces2.length);
+					var score_diff = Math.floor(75 * Math.pow(1.5, this.panel.num_successive_scoring) * disappearing_pieces2.length);
 					this.panel.score_label.addScore(score_diff);		//スコアを追加する
 					var pieces = candidates[couple_indices[cur_index]].slice(0), targets = candidates[target_index].slice(0);
 					var average_coords = this.panel.calcPiecesAverageCoordinates(pieces), average_coords2 = this.panel.calcPiecesAverageCoordinates(targets);
-					var section_x = (average_coords.x < average_coords2.x) ? this.x : this.x + this.width / 2;
-					var section_x2 = (average_coords.x < average_coords2.x) ? this.x + this.width / 2 : this.x;
+					var section_x = (average_coords.x < average_coords2.x) ? this.panel.field.x : this.panel.field.x + this.panel.field.width / 2;
+					var section_x2 = (average_coords.x < average_coords2.x) ? this.panel.field.x + this.panel.field.width / 2 : this.panel.field.x;
 					this.xml_manager.getVarStore().addVar(getPropertyName(PieceTypes, pieces[0].type), average_coords, true);
 					this.xml_manager.getVarStore().addVar(getPropertyName(PieceTypes, targets[0].type), average_coords2, true);
 					this.xml_manager.getVarStore().addVar("score", this.panel.score_label.getScore(), true);
                     var double_average_coords = {x : (average_coords.x + average_coords2.x) / 2, y : (average_coords.y + average_coords2.y) / 2};
                     var effects = this.createBasicEffects("COUPLING", double_average_coords, score_diff);
                     this.tag_manager.interpret(null, double_average_coords, effects);
-					//effects.concat(this.chooseAppropriateEffects(pieces, targets));
-					/*this.effect_manager.addEffect(new PiecesEffect(this.xml_manager, pieces, score_diff / 2,
-                        this.num_successive_disappearance, average_coords, selected_effects1));	//それぞれのグループのピースの種類に対応するエフェクトを追加する
-					this.effect_manager.addEffect(new PiecesEffect(this.xml_manager, targets, score_diff / 2, 
-                        this.num_successive_disappearance, average_coords2, selected_effects2));*/
+					var selected_effects = this.chooseAppropriateEffects(pieces, targets);
+                    
+                    //それぞれのグループのピースの種類に対応するエフェクトを追加する
+                    var info = {x : section_x, width : this.panel.field.width / 2, average_coords : average_coords, panel_right : this.panel.field.x + this.panel.field.width,
+                        panel_center_y : this.panel.field.y + this.panel.field.height};
+                    this.tag_manager.interpret(pieces, info, selected_effects);
+                    info.x = section_x2;
+                    this.tag_manager.interpret(targets, info, selected_effects);
 					if(game._debug){console.log(["score added! ", score_diff, "points added!"].join(""));}
 				}
 
@@ -1922,10 +1999,11 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
 			}, this);
 		}, this);
 
-		if(this.moving_pieces.length){	        //新しく動くピースがあったら連鎖数を増やす
-			++this.panel.num_successive_disappearance;
+		if(disappearing_pieces.length){	        //消えるピースがあったら連鎖数を増やしてピースを消すタスクを設定
+			++this.panel.num_successive_scoring;
             this.task_manager.add(new UpdateDisappearingPiecesTask(this.task_manager, disappearing_pieces, this.moving_pieces, 
                 this.panel, this.tag_manager.getMaxEndTime()));
+            this.tag_manager.resetMaxEndTime();
 		}else{
     	    this.task_manager.add(new CreateShapeTask(this.task_manager, this.panel, new PieceFactory()))
 		}
@@ -1949,16 +2027,73 @@ var UpdateMenuTask = enchant.Class.create(TaskBase, {
     }
 });
 
-var InterpretTagTask = enchant.Class.create(TaskBase, {
-    initialize : function(task_manager, tag_obj){
-        TaskBase.call(this, task_manager, "InterpretTag");
+/**
+ * 対CPU戦のCPU。ストラテジーパターンを使用しているので、実装は簡単に変えられるようになっています
+ */
+var CPUTask = enchant.Class.create(TaskBase, {
+    initialize : function(task_manager, ai, input_operator, opponent_manager){
+        TaskBase.call(this, task_manager, "CPUAI");
         
-        this.tag_manager = task_manager.stage.getManager("tag");
-        this.tag_obj = tag_obj;
+        this.ai = ai;
+        this.opponent_manager = opponent_manager;
+        this.operator = input_operator;
     },
     
     execute : function(){
-        this.tag_manager.interpret(this.tag_obj);
+        var info = this.ai.think();
+        this.task_manager.add(new CPUOperateTask(this.task_manager, info, 5, this.operator, this.opponent_manager));
+    }
+});
+
+/**
+ * CPUのシェイプの移動を担当するタスク
+ */
+var CPUOperateTask = enchant.Class.create(TaskBase, {
+    initialize : function(task_manager, info, diff_frame, input_operator, opponent_manager){
+        TaskBase.call(this, task_manager, "CPUOperate");
+        
+        this.info = info;
+        this.diff_frame = diff_frame;
+        this.next_operatable_frame = game.frame + diff_frame;
+        this.operator = input_operator;
+        this.opponent_manager = opponent_manager;
+        this.panel = input_operator.panel;
+        this.cur_num_rotation = 0;
+        this.is_operation_done = false;
+    },
+    
+    execute : function(){
+        if(game.frame >= this.next_operatable_frame){
+            var diff_x = this.panel.cur_falling_pieces.x - this.panel.field.x - this.info.pos_x * this.panel.size_of_block.width;
+            if(this.cur_num_rotation < this.info.num_rotate){
+                if(this.info.num_rotate != 3){
+                    this.operator.operateDown();
+                }else{
+                    this.operator.operateUp();
+                }
+                
+                if(++this.cur_num_rotation >= this.info.num_rotate || this.info.num_rotate == 3){
+                    this.cur_num_rotation = 3;
+                }
+            }else if(diff_x != 0){
+                if(diff_x > 0){
+                    this.operator.operateLeft();
+                }else{
+                    this.operator.operateRight();
+                }
+            }else{
+                this.is_operation_done = true;
+            }
+            
+            this.next_operatable_frame = game.frame + this.diff_frame;
+        }
+        
+        if(this.is_operation_done){
+            this.operator.operateA();
+            this.opponent_manager.setAvailable();
+        }else{
+            this.task_manager.add(this);
+        }
     }
 });
 
@@ -1979,8 +2114,14 @@ var TaskManager = enchant.Class.create(Manager, {
         if(!this.is_available){this.is_available = true;}
     },
     
+    taskExists : function(name){
+        return !this.queue.every(function(task){
+            return task.name != name;
+        });
+    },
+    
     update : function(){
-        if(!this.is_available){return;}
+        if(!this.is_available || !this.stage.is_in_game){return;}
         
         this.queue.forEach(function(task){
             task.execute();
@@ -1989,6 +2130,109 @@ var TaskManager = enchant.Class.create(Manager, {
         this.queue = this.buffer;
         if(!this.buffer.length){this.is_available = false;}
         this.buffer = [];
+    }
+});
+
+/**
+ * AIの基底クラス
+ */
+var AIBase = enchant.Class.create({
+    initialize : function(panel){
+        this.panel = panel;
+        this.inner_field = new Field(panel.field.width, panel.field.height, panel.field.x, panel.field.y, panel.size_of_block);
+    }
+});
+
+var BasicAI = enchant.Class.create(AIBase, {
+    initialize : function(panel){
+        AIBase.call(this, panel);
+        
+        this.falling_pieces = null;
+    },
+    
+    /**
+     * ピース内のローカル座標系からパネルのローカル座標系へ座標変換する
+	 */
+	convertPositionLocalToGlobal : function(position_in_shape){
+		return {x : this.falling_pieces.x + position_in_shape.x, y : this.falling_pieces.y + position_in_shape.y};
+	},
+    
+    calcAIScore : function(candidate_pieces){
+        //var weights = [129, NUM_VERTICAL_BLOCKS * 4 + 1, NUM_VERTICAL_BLOCKS * NUM_VERTICAL_BLOCKS * 2 + 1, NUM_VERTICAL_BLOCKS * 2 + 1];
+        //var fp = new Array(weights.length);
+        
+        var cc = candidate_pieces.map(function(piece){
+            return piece.countConnectedPieces([], 0) * 4 + piece.position.y;
+        });
+        //fp[0] = cc;
+        
+        return cc.reduce(function(a, b){return a + b;});
+    },
+    
+    clean : function(pieces){
+        pieces.forEach(function(piece){
+            this.inner_field.removePiece(piece);
+        }, this);
+    },
+    
+    fall : function(pieces){
+        pieces.forEach(function(piece){
+            piece.position.y = Math.round(piece.position.y);
+            this.inner_field.removePiece(piece);
+        	for(var i = 1; this.inner_field.tryToMove(piece.position, 0, i); ++i) ;
+    		piece.position.y += (i - 1);
+    		this.inner_field.setPieceToField(piece);
+        }, this);
+        
+        pieces.forEach(function(piece){
+            this.inner_field.addNeighborsReference(piece);
+        }, this);
+    },
+    
+    rotate : function(shape, is_clockwise){
+        shape.pieces = shape.pieces.map(function(piece) {   //ピースを回転させる。コピーを取るのは簡単に元に戻せるようにするため
+            var before = {x: piece.position_in_shape.x, y: piece.position_in_shape.y};
+	        piece.position_in_shape.x = Math.round((!is_clockwise) ? before.y * 1 : -(before.y * 1)); //回転行列にθ=pi/2を代入したもの
+	        piece.position_in_shape.y = Math.round((!is_clockwise) ? -(before.x * 1) : before.x * 1); //cos(pi/2)=0,sin(pi/2)=1となるため
+	        piece.position = this.convertPositionLocalToGlobal(piece.position_in_shape);
+	
+	        return piece;
+	    }, this);
+	
+	    return (shape.pieces.every(function(piece) {
+	        return (this.inner_field.tryToMove(piece.position, 0, 0) && this.inner_field.tryToMove(piece.position, 0, 1));
+	    }, this));
+    },
+    
+    think : function(){
+        if(game._debug){console.log("--AI started thinking--");}
+        
+        this.inner_field.pieces = this.panel.field.pieces.slice(0);     //実際の盤面と内部の盤面の同期をとる
+        this.falling_pieces = {x : 0, y : 0, pieces : this.panel.cur_falling_pieces.pieces.deepCopy()};
+        var max = {score : 0, pos_x : 0, num_rotate : 0, pieces : null};
+        for(var i = 0; i < NUM_HORIZONTAL_BLOCKS; ++i){
+            this.falling_pieces.x = i;
+            for(var j = 0; j < 4; ++j){
+                if(this.rotate(this.falling_pieces, true)){
+                    var pieces = this.falling_pieces.pieces.deepCopy();
+                    this.fall(pieces);
+                    var score = this.calcAIScore(pieces);
+                    this.clean(pieces);
+                    if(score > max.score){
+                        max.score = score;
+                        max.pos_x = i;
+                        max.num_rotate = (j + 1) % 4;
+                        max.pieces = pieces;
+                    }
+                }
+            }
+        }
+        
+        if(game._debug){
+            console.log("--AI finished thinking--");
+            console.log(["And he guessed x at ", max.pos_x, " and rotated ", max.num_rotate, " times is best."].join(""));
+        }
+        return max;
     }
 });
 
@@ -2005,17 +2249,16 @@ var InputOperator = enchant.Class.create({
  * 通常時のユーザー入力を処理するクラス
  */
 var NormalOperator = enchant.Class.create(InputOperator, {
-    initialize : function(){
+    initialize : function(panel){
         InputOperator.call(this);
         
         this.task_manager = null;
-        this.panel = null;
+        this.panel = panel;
     },
     
     setInputManager : function(input_manager){
         this.input_manager = input_manager;
         this.task_manager = input_manager.stage.getManager("task");
-        this.panel = input_manager.stage.getPanel();
     },
     
     operateUp : function(){     //上ボタンを押されたらピースを反時計回りに回転させる
@@ -2027,20 +2270,20 @@ var NormalOperator = enchant.Class.create(InputOperator, {
     },
     
     operateLeft : function(){   //左ボタンを押されたらピースを１マス左に移動させる
-        this.task_manager.add(new MoveShapeTask(this.task_manager, this.panel.cur_falling_pieces, -1));
+        this.task_manager.add(new MoveShapeTask(this.task_manager, this.panel.cur_falling_pieces, -1, this.panel));
     },
     
     operateRight : function(){  //右ボタンを押されたらピースを１マス右に移動させる
-        this.task_manager.add(new MoveShapeTask(this.task_manager, this.panel.cur_falling_pieces, 1));
+        this.task_manager.add(new MoveShapeTask(this.task_manager, this.panel.cur_falling_pieces, 1, this.panel));
     },
     
     operateA : function(){      //Aボタンを押されたらピースを着地させる
-        this.task_manager.add(new DropPiecesTask(this.task_manager, this.panel.cur_falling_pieces.pieces));
+        this.task_manager.add(new DropPiecesTask(this.task_manager, this.panel.cur_falling_pieces.pieces, this.panel));
         this.panel.cur_falling_pieces.is_movable = false;
     },
     
     operateB : function(){      //Bボタンを押されたらポーズする
-        this.input_manager.setOperator(new PauseOperator());
+        this.input_manager.setOperator(new PauseOperator(this.panel));
     },
     
     operateC : function(){      //Cボタンを押されたらエフェクトのオン・オフを切り替える
@@ -2053,9 +2296,8 @@ var StartOperator = enchant.Class.create(InputOperator, {
         InputOperator.call(this);
         
         this.task_manager = null;
-        this.selected_menu_num = 0;
         this.mode_labels = mode_labels;
-        this.start_screen = screen;
+        this.screen = screen;
     },
     
     setInputManager : function(input_manager){
@@ -2064,48 +2306,53 @@ var StartOperator = enchant.Class.create(InputOperator, {
     },
     
     operateUp : function(){
-        var last_selected_num = this.selected_menu_num;
-    	this.selected_menu_num = (this.selected_menu_num + 1) % 2;
-        this.task_manager.add(new UpdateMenuTask(this.task_manager, this.mode_labels, this.selected_menu_num, last_selected_num));
+        var last_selected_num = this.screen.selected_menu_num;
+    	this.screen.selected_menu_num = (this.screen.selected_menu_num + (this.mode_labels.length - 1)) % this.mode_labels.length;
+        this.task_manager.add(new UpdateMenuTask(this.task_manager, this.mode_labels, this.screen.selected_menu_num, last_selected_num));
     },
     
     operateDown : function(){
-        var last_selected_num = this.selected_menu_num;
-        this.selected_menu_num = (this.selected_menu_num + 1) % 2;
-        this.task_manager.add(new UpdateMenuTask(this.task_manager, this.mode_labels, this.selected_menu_num, last_selected_num));
+        var last_selected_num = this.screen.selected_menu_num;
+        this.screen.selected_menu_num = (this.screen.selected_menu_num + 1) % this.mode_labels.length;
+        this.task_manager.add(new UpdateMenuTask(this.task_manager, this.mode_labels, this.screen.selected_menu_num, last_selected_num));
     },
     
     operateA : function(){
-        game.is_survival = (this.selected_menu_num == 1);
-    	game.currentScene.removeChild(this.start_screen);
+        game.is_survival = (this.screen.selected_menu_num == 1);
+        if(this.screen.selected_menu_num == 2){
+            var xml_manager = this.input_manager.stage.getManager("xml"), panel = this.input_manager.stage.getPanel();
+            var opponent_manager = new OpponentManager(this.input_manager.stage, xml_manager, panel.field.x + panel.field.width + 80);
+            this.input_manager.stage.addManager("opponent", opponent_manager, true);
+            var piece_task = new CreateShapeTask(this.task_manager, opponent_manager.panel, new PieceFactory());
+            piece_task.setNextPieces();
+            this.task_manager.add(piece_task);
+        }
+    	game.currentScene.removeChild(this.screen);
         this.task_manager.add(new CreateShapeTask(this.task_manager, this.input_manager.stage.getPanel(), new PieceFactory()));
-        this.input_manager.setOperator(new NormalOperator());
+        this.input_manager.setOperator(new NormalOperator(this.input_manager.stage.getPanel()));
         this.input_manager.stage.is_in_game = true;
     }
 });
 
 var PauseOperator = enchant.Class.create(InputOperator, {
-    initialize : function(){
+    initialize : function(panel){
         InputOperator.call(this);
         
         this.pause_screen = null;
+        this.panel = panel;
     },
     
     setInputManager : function(input_manager){
         this.input_manager = input_manager;
-        var panel = input_manager.stage.getPanel();
-        this.pause_screen = new PauseScreen(input_manager.stage.getManager("xml"), panel.y, panel.height);
+        this.pause_screen = new PauseScreen(input_manager.stage.getManager("xml"), this.panel.field.y, this.panel.field.height);
         game.currentScene.addChild(this.pause_screen);
         input_manager.stage.is_in_game = false;
-        this.task_manager = input_manager.stage.getManager("task");
-        this.task_manager.is_available = false;
     },
     
     operateB : function(){      //Bボタンを押されたらポーズ画面を抜ける
         game.currentScene.removeChild(this.pause_screen);
-        this.input_manager.setOperator(new NormalOperator());
+        this.input_manager.setOperator(new NormalOperator(this.panel));
         this.input_manager.stage.is_in_game = true;
-        this.task_manager.is_available = false;
     }
 });
 
@@ -2149,25 +2396,60 @@ var InputManager = enchant.Class.create(Manager, {
     }
 });
 
+/**
+ * 対戦相手に関する処理を管理する。対戦相手はCPU戦や対人戦など
+ */
+var OpponentManager = enchant.Class.create(Manager, {
+    initialize : function(stage, xml_manager, x){
+        Manager.call(this, stage);
+        
+        var panel = stage.getPanel();
+        this.panel = new Panel(32 * NUM_HORIZONTAL_BLOCKS, 32 * NUM_VERTICAL_BLOCKS, x, 80, xml_manager);
+        this.panel.score_label = new Score(panel.field.x + panel.field.width, 0);
+        this.stage.addChild(this.panel.field);
+        this.stage.addChild(this.panel.score_label);
+        this.task_manager = null;
+        this.input_operator = new NormalOperator(this.panel);
+        this.input_operator.setInputManager(stage.getManager("input"));
+        this.ai = new BasicAI(this.panel);
+    },
+    
+    setAvailable : function(){
+        this.is_available = true;
+    },
+    
+    update : function(){
+        if(!this.is_available || !this.stage.is_in_game){return;}
+        if(!this.task_manager){this.task_manager = this.stage.getManager("task");}
+        
+        if(this.panel.is_new_pieces_set){   //新しいピースがセットされたことを確認してから次の思考タスクをセットする
+            this.task_manager.add(new CPUTask(this.task_manager, this.ai, this.input_operator, this));
+            this.panel.is_new_pieces_set = false;
+            this.is_available = false;
+        }
+    }
+});
+
 var Stage = enchant.Class.create(enchant.Group, {
 	initialize : function(){
 		enchant.Group.call(this);
 
-        this.is_in_game = false;
+        this.is_in_game = true;
 		mersenne = new MersenneTwister();		//乱数生成器の初期化
 
         var xml_manager = new XmlManager(this, "Effects.xml");    //XmlManagerの初期化
         var managers = {xml : xml_manager, tag : new TagManager(this), sound : new SoundManager(this), label : new LabelManager(this),
-            effect : new EffectManager(this), input : new InputManager(this), task : new TaskManager(this)
+            effect : new EffectManager(this), input : new InputManager(this), task : new TaskManager(this), image : new ImageManager(this)
         };
-		var panel = new Panel(32 * NUM_HORIZONTAL_BLOCKS, 32 * NUM_VERTICAL_BLOCKS, game.width * 1 / 3, 80, xml_manager);
+		var panel = new Panel(32 * NUM_HORIZONTAL_BLOCKS, 32 * NUM_VERTICAL_BLOCKS, 160, 80, xml_manager);
+        panel.next_piece_label = new NextPieceLabel(0, panel.field.y, panel.field.x, panel.field.height);
+        panel.score_label = new Score(0, 0);
         var piece_task = new CreateShapeTask(managers.task, panel, new PieceFactory());
         piece_task.setNextPieces();     //最初に出現するピースを設定しておく
         
-		xml_manager.panel_bottom = panel.y + panel.height;
-		xml_manager.getVarStore().addVar("panel", {width : panel.width, height : panel.height}, true);
+		xml_manager.getVarStore().addVar("field", {width : panel.field.width, height : panel.field.height}, true);
         
-        var array = [managers.input, managers.task, managers.effect, managers.label, managers.sound];
+        var array = [managers.input, managers.task, managers.effect, managers.image, managers.label, managers.sound];
         var back = new enchant.Sprite(game.width, game.height);
     	back.backgroundColor = "#ebebeb";
         
@@ -2177,7 +2459,7 @@ var Stage = enchant.Class.create(enchant.Group, {
 		this.addChild(panel.quick_reference);
 		this.addChild(panel.home_button);
 		this.addChild(panel.manual_button);
-		this.addChild(panel);
+		this.addChild(panel.field);
         
         this.loadResources = function(path_header, paths){
     		var audio = new Audio();
@@ -2195,18 +2477,11 @@ var Stage = enchant.Class.create(enchant.Group, {
 		};
         
         this.loadResources(xml_manager.getHeader("paths"), xml_manager.getVarStore().getVar("paths"));
-
-		if(game._debug){
-			this.addEventListener('enterframe', function(){
-                if(!this.is_in_game){return;}
-				if(game.frame % 5 == 0){
-					console.log(["[", game.frame, "] "].join(""));
-					panel.cur_falling_pieces.pieces.forEach(function(piece, index){
-						if(piece){console.log([index, ":", piece.logPosition()].join(""));}
-					});
-				}
-			});
-		}
+        
+        this.addManager = function(name, manager, is_updatable){
+            managers[name] = manager;
+            if(is_updatable){array.push(manager);}
+        };
         
         this.getManager = function(name){
             return managers[name];
@@ -2220,7 +2495,7 @@ var Stage = enchant.Class.create(enchant.Group, {
             array.forEach(function(manager){
                 manager.update();
             });
-        })
+        });
 
         var pad = new enchant.Sprite(100, 100);
         pad.moveTo(50, panel.manual_button.y - pad.height - 30);
@@ -2254,7 +2529,7 @@ var Stage = enchant.Class.create(enchant.Group, {
 				}
 
 				touched = false;
-			}else if(e.x <= panel.x && e.y <= panel.y){
+			}else if(e.x <= panel.field.x && e.y <= panel.field.y){
 				game.input["b"] = true;
 			}
 		});
@@ -2282,7 +2557,7 @@ var Stage = enchant.Class.create(enchant.Group, {
 });
 
 window.onload = function(){
-	game = new enchant.nineleap.memory.Game(480, 760);
+	game = new enchant.nineleap.memory.Game(880, 760);
 	game.fps = 30;
 	game.preload(ImagePaths.concat('images/pad.png'));
 	game._debug = true;
@@ -2294,7 +2569,7 @@ window.onload = function(){
 	game.onload = function(){
 		var stage = new Stage();
 		game.currentScene.addChild(stage);
-        var start_screen = new StartScreen(stage.getManager("input"), stage.getManager("task"), stage.getManager("xml"));
+        var start_screen = new StartScreen(stage.getManager("input"), stage.getManager("task"), stage.getManager("xml"), stage.getPanel().field);
         game.currentScene.addChild(start_screen);
 	};
 

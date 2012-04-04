@@ -27,11 +27,12 @@
             "start" : {
                 "explanation" : "スペースキーまたはタッチでモード選択ができます",
                 "slow_mode" : "ゆったりモード",
-                "fast_mode" : "サバイバルモード"
+                "fast_mode" : "サバイバルモード",
+                "vs_cpu" : "対CPU"
             },
     
             "pause" : {
-                "explanation" : "矢印キー上、またはクリック・タッチでゲームを再開します"
+                "explanation" : "Pキー、またはクリック・タッチでゲームを再開します"
             },
     
             "panel" : {
@@ -42,11 +43,12 @@
             "start" : {
                 "explanation" : "Press the space bar or click/touch to choose a preferred mode",
                 "slow_mode" : "Take-your-own-pace mode",
-                "fast_mode" : "Beat-it-or-beaten mode"
+                "fast_mode" : "Beat-it-or-beaten mode",
+                "vs_cpu" : "VS CPU"
             },
     
             "pause" : {
-                "explanation" : "Press the up arrow key or click/touch the screen to resume the game"
+                "explanation" : "Press the P key or click/touch the screen to resume the game"
             },
     
             "panel" : {
