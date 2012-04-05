@@ -400,6 +400,24 @@ var StartScreen = enchant.Class.create(enchant.Group, {
 				}
 			}
 		});
+		
+		var touched = false, prev_touched_frame = 0;
+		this.addEventListener('touchstart', function(){
+			prev_touched_frame = game.frame;
+			touched = true;
+		});
+		
+		this.addEventListener('touchend', function(){
+			if(touched){
+				if(game.frame - prev_touched_frame <= 20){
+					game.input["a"] = true;
+				}else{
+					game.input['a'] = false;
+				}
+				
+				touched = false;
+			}
+		});
 	}
 });
 
