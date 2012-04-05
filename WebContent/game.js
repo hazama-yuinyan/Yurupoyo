@@ -122,7 +122,9 @@ enchant();
 const NUM_VERTICAL_BLOCKS = 20;
 const NUM_HORIZONTAL_BLOCKS = 10;
 var ImagePaths = ['images/piece_akari.png', 'images/piece_ayano.png', 'images/piece_chinatsu.png', 'images/piece_chitose.png',
-                  'images/piece_himawari.png', 'images/piece_kyoko.png', 'images/piece_sakurako.png', 'images/piece_yui.png'];
+                  'images/piece_himawari.png', 'images/piece_kyoko.png', 'images/piece_sakurako.png', 'images/piece_yui.png',
+                  'images/item_akari.png', 'images/item_ayano.png', 'images/item_chinatsu.png', 'images/item_chitose.png',
+                  'images/item_himawari.png', 'images/item_kyoko.png', 'images/item_sakurako.png', 'images/item_yui.png'];
 var PieceTypes = {AKARI : 0, AYANO : 1, CHINATSU : 2, CHITOSE : 3, HIMAWARI : 4, KYOKO : 5, SAKURAKO : 6, YUI : 7, MAX : 8};
 
 var shapes = {shapes : [                                                        //static変数がないための苦肉の策
@@ -150,7 +152,7 @@ var shapes = {shapes : [                                                        
 		               widths : [32 * 3, 32 * 3, 32 * 3, 32 * 2, 32 * 4, 32 * 2, 32 * 2, 32 * 3, 32, 32 * 2],
 		               heights : [32 * 2, 32 * 2, 32 * 2, 32 * 2, 32, 32 * 2, 32 * 2, 32, 32 * 2, 32]};
 
-var system_lang = navigator.language, system_platform = navigator.platform;
+var system_lang = navigator.language.substring(0, 2), system_platform = navigator.platform;
 
 
 if(navigator.userAgent.toLowerCase().search("chrome") != -1){   //Chromeだと、funのコンテキストを変えられないようなので、そのWorkaround
@@ -402,7 +404,8 @@ var StartScreen = enchant.Class.create(enchant.Group, {
 });
 
 var GameOver = enchant.Class.create({
-	initialize : function(xml_manager, score){
+	initialize : function(stage){
+        var xml_manager = stage.getManager("xml"), score = stage.getPanel().score_label.getScore();
         game.memory.player.data = {is_survival : game.is_survival};
         game.memory_update();
         
@@ -514,56 +517,147 @@ var PauseScreen = enchant.Class.create(enchant.Group, {
 	}
 });
 
-var Score = enchant.Class.create(enchant.Label, {
-	initialize : function(x, y){
-		enchant.Label.call(this, "SCORE:0");
-
-		this.moveTo(x, y);
-		this.font = "bold xx-large 'うずらフォント','MS ゴシック'";
-		this.backgroundColor = "#ebebeb";
-		this.color = "#ff1512";
+var Score = enchant.Class.create(enchant.Group, {
+	initialize : function(x, y, is_vs, panel_y){
+        enchant.Group.call(this);
+        
+        var label = new enchant.Label("SCORE:0");
+		label.moveTo(x, y);
+	    label.font = "bold xx-large 'うずらフォント','MS ゴシック'";
+		label.backgroundColor = "#ebebeb";
+		label.color = "#ff1512";
+        label.width = 250;
 		this.score = 0;
+        this.label = label;
+        this.addChild(this.label);
+        
+        if(is_vs){
+            var label2 = new enchant.Label("TIME:30.0");
+            label2.moveTo(x, y + panel_y / 2);
+            label2.font = "bold xx-large 'うずらフォント','MS ゴシック'";
+    	    label2.backgroundColor = "#ebebeb";
+		    label2.color = "#1215ff";
+            label2.width = 250;
+            this.remaining_time = 30.0;                         //残りの持ち時間(対戦用)
+            this.label2 = label2;
+            this.addChild(this.label2);
+        }
 	},
 
 	addScore : function(how_much){
 		this.score += how_much;
-		this.text = "SCORE:" + this.score;
+		this.label.text = "SCORE:" + this.score;
 	},
 
 	getScore : function(){
 		return this.score;
-	}
+	},
+    
+    addRemainingTime : function(how_much){
+        this.remaining_time += how_much;
+        this.label2.text = "TIME:" + this.remaining_time.toFixed(2);
+    },
+    
+    getRemainingTime : function(){
+        return this.remaining_time;
+    }
 });
 
-var NextPieceLabel = enchant.Class.create({
+var Item = enchant.Class.create(enchant.Sprite, {
+    initialize : function(name, piece_type){
+        enchant.Sprite.call(this, 32, 32);
+        
+        this.name = name;
+        this.piece_type = piece_type;
+    }
+});
+
+var ItemInventory = enchant.Class.create(enchant.Group, {
+    initialize : function(x, y, field_y){
+        enchant.Group.call(this);
+        
+        this.moveTo(x, y);
+        this.width = 100;
+        
+        var back = new enchant.Label("");
+        back.moveTo(0, 0);
+        back.width = this.width;
+        back.height = field_y;
+        back.className = "ItemInventory";
+        this.back = back;
+        this.addChild(back);
+        
+        var label = new enchant.Label("ITEMS");
+    	label.moveTo(0, 5);
+	    label.font = "bold x-large 'うずらフォント', serif";
+		label.color = "#12ff15";
+        label.width = this.width;
+        this.item_label = label;
+        this.addChild(label);
+        
+        this.items = [];
+    },
+    
+    add : function(item){
+        var path = ImagePaths[PieceTypes.MAX + item.piece_type];
+        item.image = game.assets[ImagePaths[path]];
+        item.y = this.back.height - item.height - 10;
+        this.items.push(item);
+        this.addChild(item);
+        this.updateImages();
+    },
+    
+    use : function(){
+        var item = this.items.shift();
+        this.removeChild(item);
+        this.updateImages();
+        return item;
+    },
+    
+    updateImages : function(){
+        if(this.items.length > 3){          //一度に保持しておけるアイテムは３つまで
+            var first_item = this.items.shift();
+            this.removeChild(first_item);
+        }
+        
+        this.items.forEach(function(item, index){
+            item.x = this.x + index * item.width;
+        }, this);
+    }
+});
+
+var NextPieceLabel = enchant.Class.create(enchant.Group, {
 	initialize : function(x, y, width, height){
-		this.x = x;
-		this.y = y;
+        enchant.Group.call(this);
+        
+		this.moveTo(x, y);
 		this.width = width;
 		this.height = height;
-		this.piece_up_left_pos = {x : x + 16, y : y + 50};
+		this.piece_up_left_pos = {x : 16, y : 50};
 		this.next_label = new enchant.Label("NEXT");
 		this.next_label.font = "bold xx-large 'うずらフォント','MS ゴシック'";
 		this.next_label.backgroundColor = "#ebebeb";
 		this.next_label.color = "#000000";
 		this.next_label.x = 25;
-		this.next_label.y = this.y;
+		this.next_label.y = 0;
 		setRulerStyle(" font: " + this.next_label.font);
 		this.next_label.width = this.next_label.text.getExpansion().width;
+        this.addChild(this.next_label);
+        
 		this.next_pieces = new Array(8);
 	},
 
 	setPieces : function(pieces, size_of_block){
 		this.next_pieces.forEach(function(piece){
-			game.currentScene.removeChild(piece);
-		});
+			this.removeChild(piece);
+		}, this);
 
 		this.next_pieces = pieces;
 		this.next_pieces.forEach(function(piece, index){
 			if(piece != null){
 				piece.x = this.piece_up_left_pos.x + (index % 4) * size_of_block.width;
 				piece.y = this.piece_up_left_pos.y + Math.floor(index / 4) * size_of_block.height;
-				game.currentScene.addChild(piece);
+				this.addChild(piece);
 			}
 		}, this);
 	}
@@ -781,7 +875,6 @@ var Field = enchant.Class.create(enchant.Sprite, {
 	 * 引数のピースをパネル上に固定する
 	 */
 	setPieceToField : function(piece){
-        if(game._debug){console.log(["[", game.frame, "] set piece at: ", piece.logPosition()].join(""));}
 		this.pieces[NUM_HORIZONTAL_BLOCKS * piece.position.y + piece.position.x] = piece;
 	},
 
@@ -790,7 +883,6 @@ var Field = enchant.Class.create(enchant.Sprite, {
 	 */
 	removePiece : function(piece){
 		this.pieces[NUM_HORIZONTAL_BLOCKS * piece.position.y + piece.position.x] = null;
-        if(game._debug){console.log(["[", game.frame, "] removed piece at: ", piece.logPosition()].join(""));}
 	},
     
     /**
@@ -811,12 +903,11 @@ var Panel = enchant.Class.create({
 		this.cur_falling_pieces = null;	    //現在プレイヤーが操作しているシェイプの情報
 		this.size_of_block = {width : 32, height : 32};		//1ますのサイズ
 		this.next_appearing_pieces = null;		            //次に出現するシェイプの情報
-		this.next_piece_label = null;
-		this.score_label = null;					    //スコアを画面に表示するラベル
+		this.next_piece_label = null;                       //次に出現するシェイプを画面に表示するラベル
+		this.score_label = null;					        //スコアを画面に表示するラベル
 		this.num_successive_scoring = 1;			    	//現在の連鎖の数
-		this.shows_conversation = true;                     //ピースが消えるときにエフェクトをかけるかどうか
         this.is_new_pieces_set = false;                     //新しいピースがnext_appearing_piecesにセットされたかどうか
-        this.remaining_time = 60.0;                         //残りの持ち時間（対戦用）
+        this.item_inventory = null;                         //対戦時のアイテムの保管場所兼画面に表示する実体
         this.field = new Field(width, height, x, y, this.size_of_block);
         
         var texts = xml_manager.getText("texts");
@@ -1067,6 +1158,14 @@ var XmlManager = enchant.Class.create(Manager, {
 						variable_store.addVar([(header.type == "flags") ? "flags." : "", tokens[0]].join(""), tokens[1], true);
 					});
 					break;
+                    
+                case "template":
+					var exprs = header.text.split(/\s*;\s*/);
+					exprs.forEach(function(expr){
+						var tokens = expr.split(/\s*:\s*/);
+						variable_store.addVar([header.name, ".", tokens[0]].join(""), tokens[1], true);
+					});
+					break;
 				}
 			});
             
@@ -1130,7 +1229,7 @@ var XmlManager = enchant.Class.create(Manager, {
 		this.getHeader = function(type_name, name){
 			var header_obj = null;
 			headers.every(function(header){
-				if(header.type == type_name){
+				if(header.type == type_name && (name == "type-only" || header.name == name)){
 					header_obj = header;
 					return false;
 				}
@@ -1138,7 +1237,7 @@ var XmlManager = enchant.Class.create(Manager, {
 				return true;
 			});
 
-			return name && header_obj[name] || header_obj;
+			return header_obj;
 		}
 
 		this.verify = function(condition){
@@ -1199,13 +1298,14 @@ var TagManager = enchant.Class.create(Manager, {
                 if(!this.label_manager){this.label_manager = this.manager.label_manager;}
                 
                 var position = {x : this.manager.info.x || 0, y : 0};
-    			var style = this.xml_manager.replaceVars(tag_obj.style);
+                var tmpl = this.xml_manager.getHeader("template", tag_obj.type);
+    			var style = tmpl && [tmpl.style, tag_obj.style].join(";") || tag_obj.style;
 				setRulerStyle(style);
 				var text = tag_obj.text.slice(0), num_lines = {val : 1};
 				if(this.manager.info.width){text = text.fitInWidth(this.manager.info.width, num_lines);}
 				var size = text.getExpansion();
-				position.x = this.manager.interpretX(tag_obj.x, size.width);
-				position.y = this.manager.interpretY(tag_obj.y, size.height * num_lines.val);
+				position.x = this.manager.interpretX(tag_obj.x || tmpl.x, size.width);
+				position.y = this.manager.interpretY(tag_obj.y || tmpl.y, size.height * num_lines.val);
 
 				var label = this.createNewLabel(style, position.x, position.y, 
                     (this.manager.info.width && size.width >= this.manager.info.width) ? this.manager.info.width : size.width, text);
@@ -1228,13 +1328,17 @@ var TagManager = enchant.Class.create(Manager, {
                 this.objs = objs;
             },
             
+            putInContext : function(str, context){
+                return str.replace(/\[([^\]]+)\]/, [context, ".$1"].join(""));
+            },
+            
             interpret : function(tag_obj){
                 if(!this.xml_manager){this.xml_manager = this.manager.xml_manager;}
                 if(!this.effect_manager){this.effect_manager = this.manager.effect_manager;}
                 
                 switch(tag_obj.effect){
                 case "PieceFrameEffect":
-        			var frame = this.xml_manager.replaceVars(tag_obj.frame);
+        			var frame = this.xml_manager.replaceVars(this.putInContext(tag_obj.frame));
     				this.effect_manager.add(new PieceFrameEffect(this.objs, frame, game.frame + tag_obj.start_time));
     				break;
     
@@ -1397,13 +1501,13 @@ var LabelManager = enchant.Class.create(Manager, {
         
 		this.labels.forEach(function(label){
 			if(!label.is_added && label.start_time <= game.frame){
-				game.currentScene.addChild(label.obj);
+				this.stage.addChild(label.obj);
 				label.is_added = true;
 			}
 			if(label.end_time <= game.frame){
-				game.currentScene.removeChild(label.obj);
+				this.stage.removeChild(label.obj);
 			}
-		});
+		}, this);
 
 		this.labels = this.labels.filter(function(label){
 			return(label.end_time + 10 >= game.frame);
@@ -1435,13 +1539,13 @@ var ImageManager = enchant.Class.create(Manager, {
         
         this.images.forEach(function(image){
             if(!image.is_added && image.start_time <= game.frame){
-                game.currentScene.addChild(image.obj);
+                this.stage.addChild(image.obj);
                 image.is_added = true;
             }
             if(image.end_time <= game.frame){
-                game.currentScene.removeChild(image.obj);
+                this.stage.removeChild(image.obj);
             }
-        });
+        }, this);
         
         this.images = this.images.filter(function(image){
             return(image.end_time == 0 || image.end_time > game.frame);
@@ -1629,6 +1733,7 @@ var FallShapeTask = enchant.Class.create(ShapeTask, {
     execute : function(){
         if(!this.target.is_movable){return;}
         
+        var is_game_over = false;
         this.target.y += this.target.v_y;
     	this.target.pieces.forEach(function(piece){		//シェイプの位置座標を元に操作しているピースを移動させる
 			piece.real_coords = this.panel.convertPositionToCoordinates(piece.position_in_shape);
@@ -1645,8 +1750,8 @@ var FallShapeTask = enchant.Class.create(ShapeTask, {
         
         if(this.target.pieces.every(function(piece){
         	if(!this.panel.field.tryToMove(piece.position, 0, 1)){	//自分の下1ますが空いているかどうか確かめる
-				if(piece.position.y <= 2){		//上から数えて3段目までピースがたまってしまっていたら、ゲームオーバー
-					var gameover_scene = new GameOver(this.task_manager.stage.getManager("xml"), this.panel.score_label.getScore());
+				if(piece.position.y <= 2){         //上から数えて3段目までピースがたまってしまっていたら、ゲームオーバー
+                    is_game_over = true;
 					return false;
 				}
 
@@ -1664,6 +1769,12 @@ var FallShapeTask = enchant.Class.create(ShapeTask, {
 		}, this)){      //everyがtrueを返したらまだ地表に達しそうなピースはなかったという事。なので次のフレームも同じ事を繰り返す
     	    this.task_manager.add(this);
 		}
+        
+        if(this.panel.score_label.getRemainingTime() < 0){is_game_over = true;}     //残り時間が0秒以下ならゲームオーバー
+        
+        if(is_game_over){
+            var gameover_scene = new GameOver(this.task_manager.stage);
+        }
     }
 });
 
@@ -1747,7 +1858,6 @@ var CreateShapeTask = enchant.Class.create(TaskBase, {
     execute : function(){
         this.panel.setPlayerPieces();
         this.task_manager.add(new FallShapeTask(this.task_manager, this.panel.cur_falling_pieces, this.panel));
-        this.task_manager.stage.getManager("input").is_available = true;
 
 		//乱数をつかって次のピースの形を決め、初期位置を設定しておく
 		this.setNextPieces();
@@ -1781,7 +1891,7 @@ var DropPiecesTask = enchant.Class.create(PieceTask, {
 			if(piece.neighbors[1]){piece.neighbors[1].makeUnconnected();}
 			this.effect_manager.remove(piece);
 			if(game._debug){
-				console.log(["[", game.frame, "] the piece at", piece.logPosition(), "which is a(n) \"", getPropertyName(PieceTypes, piece.type),
+				console.log(["[", game.frame, "] the piece at", piece.logPosition(), " which is a(n) \"", getPropertyName(PieceTypes, piece.type),
 						"\" is moving to"].join(""));
 			}
             
@@ -1791,7 +1901,6 @@ var DropPiecesTask = enchant.Class.create(PieceTask, {
 		}, this);
 
 		this.task_manager.add(new MakePiecesDisappearTask(this.task_manager, this.targets, this.panel));
-        this.input_manager.is_available = false;
     }
 });
 
@@ -1809,7 +1918,7 @@ var UpdateDisappearingPiecesTask = enchant.Class.create(PieceTask, {
 			this.targets.forEach(function(piece){
 				this.panel.field.removePiece(piece);
 				if(game._debug){
-                    console.log(["[", game.frame, "] the piece at", piece.logPosition(), "which is a(n) \"", getPropertyName(PieceTypes, piece.type),
+                    console.log(["[", game.frame, "] the piece at", piece.logPosition(), " which is a(n) \"", getPropertyName(PieceTypes, piece.type),
 						"\" is going to disappear."].join(""));			
 				}
 				game.currentScene.removeChild(piece);
@@ -1847,7 +1956,7 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
      * 自分と相手のピースの種類に合わせたエフェクトを選択する
 	 */
 	chooseAppropriateEffects : function(pieces, targets){
-		if(!this.panel.shows_conversation){return [];}
+		if(!game.shows_conversation){return [];}
 
 		var piece_type = getPropertyName(PieceTypes, pieces[0].type)
 		, target_type = getPropertyName(PieceTypes, targets && targets[0].type);
@@ -1864,11 +1973,12 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
 	},
     
     createBasicEffects : function(piece_type, average_coords, score){
-        return [{effect : "Label", style : ["background-color: #ffffff; color: ", this.xml_manager.getHeader("colors", piece_type),
+        var variable_store = this.xml_manager.getVarStore();
+        return [{effect : "Label", style : ["background-color: #ffffff; color: ", variable_store.getVar([piece_type, ".color"].join("")),
             "; font: large 'うずらフォント', 'MS ゴシック';"].join(""), x : Math.floor(average_coords.x - 50),
         	y : Math.floor(average_coords.y - 20), text : "+" + score, end_time : 30, num : -1},
-            {effect : "Label", style : ["background-color: #ffffff; color: ", this.xml_manager.getHeader("colors", getPropertyName(PieceTypes,
-            this.panel.num_successive_scoring % PieceTypes.MAX)), "; font: bold large 'うずらフォント', 'MS ゴシック';"].join(""),
+            {effect : "Label", style : ["background-color: #ffffff; color: ", variable_store.getVar([getPropertyName(PieceTypes,
+            this.panel.num_successive_scoring % PieceTypes.MAX), ".color"].join("")), "; font: bold large 'うずらフォント', 'MS ゴシック';"].join(""),
             x : Math.floor(average_coords.x - 50), y : Math.floor(average_coords.y - 40),
             text : this.panel.num_successive_scoring + "COMBO!", end_time : 30, num : -1},
             {effect : "Sound", src : ["$paths.BANG", (this.panel.num_successive_scoring - 1) % 8 + 1].join(""), num : -1}];
@@ -1926,8 +2036,13 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
 
 				var score_diff = 100 * Math.pow(2, this.panel.num_successive_scoring) * group.length;
 				this.panel.score_label.addScore(score_diff);	//スコアを追加する
+                if(game.mode.search("vs") != -1){
+                    var time_diff = score_diff / 200.0;
+                    this.panel.score_label.addRemainingTime(time_diff);         //残り時間を追加する
+                }
+                
 				var average_coords = this.panel.calcPiecesAverageCoordinates(group), piece_type = getPropertyName(PieceTypes, group[0].type);
-				this.xml_manager.getVarStore().addVar(piece_type, average_coords, true);
+				this.xml_manager.getVarStore().addVar("average_coords", average_coords, true);
 				this.xml_manager.getVarStore().addVar("score", this.panel.score_label.getScore(), true);
                 var effects = this.createBasicEffects(piece_type, average_coords, score_diff);
 				effects = effects.concat(this.chooseAppropriateEffects(group));
@@ -1974,12 +2089,17 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
 
 					var score_diff = Math.floor(75 * Math.pow(1.5, this.panel.num_successive_scoring) * disappearing_pieces2.length);
 					this.panel.score_label.addScore(score_diff);		//スコアを追加する
+                    if(game.mode.search("vs") != -1){
+                        var time_diff = score_diff / 200.0;
+                        this.panel.score_label.addRemainingTime(time_diff);     //残り時間を追加する
+                    }
+                    
 					var pieces = candidates[couple_indices[cur_index]].slice(0), targets = candidates[target_index].slice(0);
 					var average_coords = this.panel.calcPiecesAverageCoordinates(pieces), average_coords2 = this.panel.calcPiecesAverageCoordinates(targets);
 					var section_x = (average_coords.x < average_coords2.x) ? this.panel.field.x : this.panel.field.x + this.panel.field.width / 2;
 					var section_x2 = (average_coords.x < average_coords2.x) ? this.panel.field.x + this.panel.field.width / 2 : this.panel.field.x;
-					this.xml_manager.getVarStore().addVar(getPropertyName(PieceTypes, pieces[0].type), average_coords, true);
-					this.xml_manager.getVarStore().addVar(getPropertyName(PieceTypes, targets[0].type), average_coords2, true);
+					this.xml_manager.getVarStore().addVar("average_coords", average_coords, true);
+					this.xml_manager.getVarStore().addVar("average_coords2", average_coords2, true);
 					this.xml_manager.getVarStore().addVar("score", this.panel.score_label.getScore(), true);
                     var double_average_coords = {x : (average_coords.x + average_coords2.x) / 2, y : (average_coords.y + average_coords2.y) / 2};
                     var effects = this.createBasicEffects("COUPLING", double_average_coords, score_diff);
@@ -2097,6 +2217,26 @@ var CPUOperateTask = enchant.Class.create(TaskBase, {
     }
 });
 
+var TimeTakerTask = enchant.Class.create(TaskBase, {
+    initialize : function(task_manager, score_label){
+        TaskBase.call(this, task_manager, "TimeTaker");
+        
+        this.prev_time = game.currentTime;
+        this.score_label = score_label;
+    },
+    
+    execute : function(){
+        var now = game.currentTime, diff = (now - this.prev_time) / 1000.0;
+        this.score_label.addRemainingTime(-diff);
+        this.prev_time = now;
+        this.task_manager.add(this);
+    }
+});
+
+var ItemTask = enchant.Class.create(TaskBase, {
+    initialize : function(){}
+});
+
 /**
  * そのフレームに処理すべきタスクを保持しておき、毎フレーム実行する
  * 実行が終わったタスクはすべてキューから取り除かれる
@@ -2211,6 +2351,7 @@ var BasicAI = enchant.Class.create(AIBase, {
         this.falling_pieces = {x : 0, y : 0, pieces : this.panel.cur_falling_pieces.pieces.deepCopy()};
         var max = {score : 0, pos_x : 0, num_rotate : 0, pieces : null};
         for(var i = 0; i < NUM_HORIZONTAL_BLOCKS; ++i){
+            if(game._debug){console.log(["Inspecting x at ", i].join(""));}
             this.falling_pieces.x = i;
             for(var j = 0; j < 4; ++j){
                 if(this.rotate(this.falling_pieces, true)){
@@ -2287,7 +2428,7 @@ var NormalOperator = enchant.Class.create(InputOperator, {
     },
     
     operateC : function(){      //Cボタンを押されたらエフェクトのオン・オフを切り替える
-        this.panel.is_showing_coversation = !this.panel.is_showing_conversation;
+        game.shows_conversation = !game.shows_conversation;
     }
 });
 
@@ -2318,18 +2459,32 @@ var StartOperator = enchant.Class.create(InputOperator, {
     },
     
     operateA : function(){
+        var mode_name = "", panel = this.input_manager.stage.getPanel();
+        panel.score_label = new Score(0, 0, (this.screen.selected_menu_num == 2), panel.field.y);
+        this.input_manager.stage.addChild(panel.score_label);
+        panel.item_inventory = new ItemInventory(panel.field.x + panel.field.width - 100, 0, panel.field.y);
+        this.input_manager.stage.addChild(panel.item_inventory);
         game.is_survival = (this.screen.selected_menu_num == 1);
+        
         if(this.screen.selected_menu_num == 2){
-            var xml_manager = this.input_manager.stage.getManager("xml"), panel = this.input_manager.stage.getPanel();
+            var xml_manager = this.input_manager.stage.getManager("xml");
             var opponent_manager = new OpponentManager(this.input_manager.stage, xml_manager, panel.field.x + panel.field.width + 80);
             this.input_manager.stage.addManager("opponent", opponent_manager, true);
             var piece_task = new CreateShapeTask(this.task_manager, opponent_manager.panel, new PieceFactory());
             piece_task.setNextPieces();
             this.task_manager.add(piece_task);
+            this.task_manager.add(new TimeTakerTask(this.task_manager, panel.score_label));
+            this.task_manager.add(new TimeTakerTask(this.task_manager, opponent_manager.panel.score_label));
+            mode_name = "vs_cpu";
+        }else{
+            mode_name = "one_player";
         }
+        
+        game.mode = mode_name;
     	game.currentScene.removeChild(this.screen);
-        this.task_manager.add(new CreateShapeTask(this.task_manager, this.input_manager.stage.getPanel(), new PieceFactory()));
-        this.input_manager.setOperator(new NormalOperator(this.input_manager.stage.getPanel()));
+        
+        this.task_manager.add(new CreateShapeTask(this.task_manager, panel, new PieceFactory()));
+        this.input_manager.setOperator(new NormalOperator(panel));
         this.input_manager.stage.is_in_game = true;
     }
 });
@@ -2405,9 +2560,11 @@ var OpponentManager = enchant.Class.create(Manager, {
         
         var panel = stage.getPanel();
         this.panel = new Panel(32 * NUM_HORIZONTAL_BLOCKS, 32 * NUM_VERTICAL_BLOCKS, x, 80, xml_manager);
-        this.panel.score_label = new Score(panel.field.x + panel.field.width, 0);
+        this.panel.score_label = new Score(panel.field.x + panel.field.width, 0, true, this.panel.field.y);
+        this.panel.item_inventory = new ItemInventory(game.width - 100, 0, panel.field.y);
         this.stage.addChild(this.panel.field);
         this.stage.addChild(this.panel.score_label);
+        this.stage.addChild(this.panel.item_inventory);
         this.task_manager = null;
         this.input_operator = new NormalOperator(this.panel);
         this.input_operator.setInputManager(stage.getManager("input"));
@@ -2443,7 +2600,6 @@ var Stage = enchant.Class.create(enchant.Group, {
         };
 		var panel = new Panel(32 * NUM_HORIZONTAL_BLOCKS, 32 * NUM_VERTICAL_BLOCKS, 160, 80, xml_manager);
         panel.next_piece_label = new NextPieceLabel(0, panel.field.y, panel.field.x, panel.field.height);
-        panel.score_label = new Score(0, 0);
         var piece_task = new CreateShapeTask(managers.task, panel, new PieceFactory());
         piece_task.setNextPieces();     //最初に出現するピースを設定しておく
         
@@ -2454,8 +2610,7 @@ var Stage = enchant.Class.create(enchant.Group, {
     	back.backgroundColor = "#ebebeb";
         
 		this.addChild(back);
-		this.addChild(panel.next_piece_label.next_label);
-		this.addChild(panel.score_label);
+		this.addChild(panel.next_piece_label);
 		this.addChild(panel.quick_reference);
 		this.addChild(panel.home_button);
 		this.addChild(panel.manual_button);
@@ -2476,7 +2631,7 @@ var Stage = enchant.Class.create(enchant.Group, {
 			}
 		};
         
-        this.loadResources(xml_manager.getHeader("paths"), xml_manager.getVarStore().getVar("paths"));
+        this.loadResources(xml_manager.getHeader("paths", "type-only"), xml_manager.getVarStore().getVar("paths"));
         
         this.addManager = function(name, manager, is_updatable){
             managers[name] = manager;
@@ -2531,6 +2686,8 @@ var Stage = enchant.Class.create(enchant.Group, {
 				touched = false;
 			}else if(e.x <= panel.field.x && e.y <= panel.field.y){
 				game.input["b"] = true;
+			}else if(e.x >= panel.field.x && e.x <= panel.field.x + panel.field.width && e.y <= panel.field.y){
+    		    game.input["c"] = true;
 			}
 		});
 	},
@@ -2545,7 +2702,7 @@ var Stage = enchant.Class.create(enchant.Group, {
 			var result;
 			if(result = str.match(/^[ \t]+/)){
 
-			}else if((result = str.match(/^([\w\-]+)\s*:\s*([^;]+);?/)) && result[1] != "position"){
+			}else if((result = str.match(/^([\w\-]+)\s*:\s*([^;]+);*/)) && result[1] != "position"){
 				styles.push({name : result[1], content : result[2]});
 			}
 
@@ -2571,6 +2728,7 @@ window.onload = function(){
 		game.currentScene.addChild(stage);
         var start_screen = new StartScreen(stage.getManager("input"), stage.getManager("task"), stage.getManager("xml"), stage.getPanel().field);
         game.currentScene.addChild(start_screen);
+        game.shows_conversation = true;                              //ピースが消えるときにエフェクトをかけるかどうか
 	};
 
 	game.keybind(32, 'a');
