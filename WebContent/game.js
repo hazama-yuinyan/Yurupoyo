@@ -206,7 +206,7 @@ String.prototype.getExpansion = function(){
  */
 function setRulerStyle(style){
 	var elem = document.getElementById("ruler");
-	var new_style = "visibility: hidden; position: absolute;" + style;
+	var new_style = "display: hidden; position: absolute;" + style;
 	elem.setAttribute("style", new_style);
 }
 
@@ -315,7 +315,7 @@ var StartScreen = enchant.Class.create(enchant.Group, {
 		var menu_label = new enchant.Label("MENU");
 		menu_label.x = field.x + field.width / 2 - 50;
 		menu_label.y = 100;
-		menu_label.font = "normal xx-large 'うずらフォント', 'MS ゴシック'";
+		menu_label.font = "normal xx-large 'うずらフォント', serif";
 		setRulerStyle(" font: " + menu_label.font);
 		menu_label.width = menu_label.text.getExpansion().width;
 		menu_label.color = "#1212fb";
@@ -326,7 +326,7 @@ var StartScreen = enchant.Class.create(enchant.Group, {
 		var explain_label = new enchant.Label(start_texts.explanation);
 		explain_label.x = 0;
 		explain_label.y = 350;
-		explain_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
+		explain_label.font = "normal x-large 'うずらフォント', serif";
 		setRulerStyle(" font: " + explain_label.font);
 		explain_label.width = game.width;
 		explain_label.backgroundColor = "#ffffff";
@@ -337,7 +337,7 @@ var StartScreen = enchant.Class.create(enchant.Group, {
 		slow_mode_label.x = field.x + field.width / 2 - 90;
 		slow_mode_label.y = 200;
 		slow_mode_label.color = "rgb(233, 109, 140)";
-		slow_mode_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
+		slow_mode_label.font = "normal x-large 'うずらフォント', serif";
 		slow_mode_label.width = slow_mode_label.text.getExpansion().width;
 		slow_mode_label.backgroundColor = "#ffffff";
         slow_mode_label._style.cursor = "pointer";
@@ -348,7 +348,7 @@ var StartScreen = enchant.Class.create(enchant.Group, {
 		fast_mode_label.x = field.x + field.width / 2 - 90;
 		fast_mode_label.y = 250;
 		fast_mode_label.color = "#000000";
-		fast_mode_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
+		fast_mode_label.font = "normal x-large 'うずらフォント', serif";
 		fast_mode_label.width = fast_mode_label.text.getExpansion().width;
 		fast_mode_label.backgroundColor = "#ffffff";
         fast_mode_label._style.cursor = "pointer";
@@ -359,7 +359,7 @@ var StartScreen = enchant.Class.create(enchant.Group, {
         vs_cpu_label.x = field.x + field.width / 2 - 90;
         vs_cpu_label.y = 300;
         vs_cpu_label.color = "#000000";
-        vs_cpu_label.font = "normal x-large 'うずらフォント', 'MS ゴシック'";
+        vs_cpu_label.font = "normal x-large 'うずらフォント', serif";
         vs_cpu_label.width = vs_cpu_label.text.getExpansion().width;
         vs_cpu_label.backgroundColor = "#ffffff";
         vs_cpu_label._style.cursor = "pointer";
@@ -400,34 +400,20 @@ var StartScreen = enchant.Class.create(enchant.Group, {
 				}
 			}
 		});
-		
-		var touched = false, prev_touched_frame = 0;
-		this.addEventListener('touchstart', function(){
-			prev_touched_frame = game.frame;
-			touched = true;
-		});
-		
-		this.addEventListener('touchend', function(){
-			if(touched){
-				if(game.frame - prev_touched_frame <= 20){
-					game.input["a"] = true;
-				}else{
-					game.input['a'] = false;
-				}
-				
-				touched = false;
-			}
-		});
 	}
 });
 
 var GameOver = enchant.Class.create({
 	initialize : function(stage){
-        var xml_manager = stage.getManager("xml"), score = stage.getPanel().score_label.getScore();
+        var xml_manager = stage.getManager("xml"), player_score = stage.getPanel().score_label, opponent_score = stage.getManager("opponent").panel.score_label;
         game.memory.player.data = {is_survival : game.is_survival};
         game.memory_update();
         
-        var result_texts = xml_manager.getText("texts").common.results;
+        var result_texts = xml_manager.getText("texts").common.results[game.mode.split("_")[0]];
+        var evalVersus = function(diff_score, diff_time){
+            if(diff_score == 0){return (diff_time > 0) ? result_texts[0] : result_texts[1];}
+            return (diff_score > 0) ? result_texts[0] : result_texts[1];
+        };
         var evalScoreSlow = function(score){
             return (score < 5000) ? result_texts[0] :
                    (score < 15000) ? result_texts[1] :
@@ -437,10 +423,19 @@ var GameOver = enchant.Class.create({
                    (score < 200000) ? result_texts[5] : result_texts[6];
         };
         var evalScoreFast = function(score){
-            return evalScoreSlow(Math.floor(score / 2));
+            return evalScoreSlow(Math.floor(score * 2));
         };
         
-        game.end(score, (game.is_survival) ? evalScoreFast(score) : evalScoreSlow(score));
+        var diff_score = player_score.getScore() - opponent_score.getScore(), diff_time = player_score.getRemainingTime() - opponent_score.getRemainingTime();
+        var label = new enchant.Label(xml_manager.getText("texts")[system_lang].end.wait_message);
+        label.font = "normal x-large 'うずらフォント', serif";
+        setRulerStyle(" font: " + label.font);
+        var size = label.text.getExpansion();
+        label.moveTo(game.width / 2 - size.width / 2, 280);
+        label.width = size.width;
+        stage.addChild(label);
+        game.end(player_score.getScore(), (game.mode.search("vs") != -1) ? evalVersus(diff_score, diff_time) :
+            (game.is_survival) ? evalScoreFast(player_score.getScore()) : evalScoreSlow(player_score.getScore()));
 	}
 });
 
@@ -457,7 +452,7 @@ var PauseScreen = enchant.Class.create(enchant.Group, {
         this.height = game.height;
         
         var pause_label = new enchant.Label("PAUSED");
-		pause_label.font = "bold xx-large 'うずらフォント','MS ゴシック'";
+		pause_label.font = "bold xx-large 'うずらフォント',serif";
 		pause_label.y = (y + 100) + field_height / 2 + 40;
 		setRulerStyle(" font: " + pause_label.font);
 		pause_label.width = pause_label.text.getExpansion().width;
@@ -469,7 +464,7 @@ var PauseScreen = enchant.Class.create(enchant.Group, {
 		var explain_label = new enchant.Label(pause_texts.explanation);
 		explain_label.x = 0;
 		explain_label.y = pause_label.y + 40;
-		explain_label.font = "bold large 'うずらフォント', 'MS ゴシック'";
+		explain_label.font = "bold large 'うずらフォント', serif";
 		explain_label.width = game.width;
 		explain_label.backgroundColor = "#ffffff";
 		explain_label.color = "#000000";
@@ -484,7 +479,7 @@ var PauseScreen = enchant.Class.create(enchant.Group, {
 		ranking_list.setAttribute("style", "height: " + field_height / 2 + "px; border: inset 5px #ff1012; overflow: hidden");
 		ranking_list.setAttribute("id", "ranking");
 		var ranking_title = document.createElement("p");
-		ranking_title.setAttribute("style", "text-align: center; font: bold large 'うずらフォント', 'MS ゴシック'");
+		ranking_title.setAttribute("style", "text-align: center; font: bold large 'うずらフォント', serif");
 		ranking_title.textContent = "RANKING";
 		ranking_list.appendChild(ranking_title);
 		ranking_list.appendChild(document.createElement("br"));
@@ -541,7 +536,7 @@ var Score = enchant.Class.create(enchant.Group, {
         
         var label = new enchant.Label("SCORE:0");
 		label.moveTo(x, y);
-	    label.font = "bold xx-large 'うずらフォント','MS ゴシック'";
+	    label.font = "bold xx-large 'うずらフォント',serif";
 		label.backgroundColor = "#ebebeb";
 		label.color = "#ff1512";
         label.width = 250;
@@ -552,11 +547,11 @@ var Score = enchant.Class.create(enchant.Group, {
         if(is_vs){
             var label2 = new enchant.Label("TIME:30.0");
             label2.moveTo(x, y + panel_y / 2);
-            label2.font = "bold xx-large 'うずらフォント','MS ゴシック'";
+            label2.font = "bold xx-large 'うずらフォント',serif";
     	    label2.backgroundColor = "#ebebeb";
 		    label2.color = "#1215ff";
             label2.width = 250;
-            this.remaining_time = 30.0;                         //残りの持ち時間(対戦用)
+            this.remaining_time = 60.0;                         //残りの持ち時間(対戦用)
             this.label2 = label2;
             this.addChild(this.label2);
         }
@@ -653,7 +648,7 @@ var NextPieceLabel = enchant.Class.create(enchant.Group, {
 		this.height = height;
 		this.piece_up_left_pos = {x : 16, y : 50};
 		this.next_label = new enchant.Label("NEXT");
-		this.next_label.font = "bold xx-large 'うずらフォント','MS ゴシック'";
+		this.next_label.font = "bold xx-large 'うずらフォント',serif";
 		this.next_label.backgroundColor = "#ebebeb";
 		this.next_label.color = "#000000";
 		this.next_label.x = 25;
@@ -909,13 +904,14 @@ var Field = enchant.Class.create(enchant.Sprite, {
 	 */
 	tryToMove : function(piece_pos, x, y){
 		return (isInRange(0, NUM_HORIZONTAL_BLOCKS, Math.floor(piece_pos.x + x)) &&
-			    isInRange(0, NUM_VERTICAL_BLOCKS, Math.floor(piece_pos.y + y)) &&
+			    isInRange(-4, NUM_VERTICAL_BLOCKS, Math.floor(piece_pos.y + y)) &&
 				!this.anyPieceExistsAt(Math.floor(piece_pos.x + x), Math.floor(piece_pos.y + y)));
 	}
 });
 
 var Panel = enchant.Class.create({
-	initialize : function(width, height, x, y, xml_manager){
+	initialize : function(width, height, x, y, xml_manager, stage){
+        this.stage = stage;
 		this.pieces_moving_rate = 30;	    //現在のピースが1ます分落下する頻度
 		this.next_speed_up_score = 10000;	//サバイバルモードで次にピースの落下速度が上がる得点
 		this.cur_falling_pieces = null;	    //現在プレイヤーが操作しているシェイプの情報
@@ -978,23 +974,29 @@ var Panel = enchant.Class.create({
         });
         
         this.cur_falling_pieces.pieces.forEach(function(piece){
-			game.currentScene.addChild(piece);
-		});
+			this.stage.addChild(piece);
+		}, this);
         
         this.num_successive_scoring = 1;
     },
     
     setPieces : function(pieces){
         this.cur_falling_pieces.pieces.forEach(function(piece) {
-            game.currentScene.removeChild(piece);
-        });
+            this.stage.removeChild(piece);
+        }, this);
         pieces.forEach(function(piece) {
-            game.currentScene.addChild(piece);
-        });
+            this.stage.addChild(piece);
+        }, this);
         this.cur_falling_pieces.pieces = pieces;
         var tmp = this.cur_falling_pieces.width;
         this.cur_falling_pieces.width = this.cur_falling_pieces.height;
         this.cur_falling_pieces.height = tmp;
+    },
+    
+    removePieces : function(pieces){
+        pieces.forEach(function(piece){
+            this.stage.removeChild(piece);
+        }, this);
     },
     
     /**
@@ -1100,7 +1102,7 @@ var XmlManager = enchant.Class.create(Manager, {
         Manager.call(this, stage);
         
 		var http_obj = new XMLHttpRequest(), http_obj2 = new XMLHttpRequest();
-		var definitions = [], headers = [], max_nums = {}, texts = null, expr_evaluator = new ExpressionEvaluator();
+		var definitions = [], headers = [], max_nums = {}, texts = null, expr_evaluator = new ExpressoEvaluator();
 		var variable_store = new VarStore();
 		var now = new Date();
 		variable_store.addVar("now", {year : now.getFullYear(), month : now.getMonth() + 1, date : now.getDate(), day : now.getDay(),
@@ -1939,8 +1941,8 @@ var UpdateDisappearingPiecesTask = enchant.Class.create(PieceTask, {
                     console.log(["[", game.frame, "] the piece at", piece.logPosition(), " which is a(n) \"", getPropertyName(PieceTypes, piece.type),
 						"\" is going to disappear."].join(""));			
 				}
-				game.currentScene.removeChild(piece);
 			}, this);
+            this.panel.removePieces(this.targets);
 
 			this.targets.splice(0);
 			if(game.is_survival && this.panel.score_label.getScore() >= this.panel.next_speed_up_score && this.panel.pieces_moving_rate > 10){
@@ -1993,11 +1995,11 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
     createBasicEffects : function(piece_type, average_coords, score){
         var variable_store = this.xml_manager.getVarStore();
         return [{effect : "Label", style : ["background-color: #ffffff; color: ", variable_store.getVar([piece_type, ".color"].join("")),
-            "; font: large 'うずらフォント', 'MS ゴシック';"].join(""), x : Math.floor(average_coords.x - 50),
-        	y : Math.floor(average_coords.y - 20), text : "+" + score, end_time : 30, num : -1},
+            "; font: large 'うずらフォント', serif;"].join(""), x : Math.floor(average_coords.x - 50),
+        	y : Math.floor(average_coords.y - 40), text : "+" + score, end_time : 30, num : -1},
             {effect : "Label", style : ["background-color: #ffffff; color: ", variable_store.getVar([getPropertyName(PieceTypes,
-            this.panel.num_successive_scoring % PieceTypes.MAX), ".color"].join("")), "; font: bold large 'うずらフォント', 'MS ゴシック';"].join(""),
-            x : Math.floor(average_coords.x - 50), y : Math.floor(average_coords.y - 40),
+            this.panel.num_successive_scoring % PieceTypes.MAX), ".color"].join("")), "; font: bold large 'うずらフォント', serif;"].join(""),
+            x : Math.floor(average_coords.x - 50), y : Math.floor(average_coords.y - 60),
             text : this.panel.num_successive_scoring + "COMBO!", end_time : 30, num : -1},
             {effect : "Sound", src : ["$paths.BANG", (this.panel.num_successive_scoring - 1) % 8 + 1].join(""), num : -1}];
     },
@@ -2055,7 +2057,7 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
 				var score_diff = 100 * Math.pow(2, this.panel.num_successive_scoring) * group.length;
 				this.panel.score_label.addScore(score_diff);	//スコアを追加する
                 if(game.mode.search("vs") != -1){
-                    var time_diff = score_diff / 200.0;
+                    var time_diff = score_diff / 133.3333;
                     this.panel.score_label.addRemainingTime(time_diff);         //残り時間を追加する
                 }
                 
@@ -2108,7 +2110,7 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
 					var score_diff = Math.floor(75 * Math.pow(1.5, this.panel.num_successive_scoring) * disappearing_pieces2.length);
 					this.panel.score_label.addScore(score_diff);		//スコアを追加する
                     if(game.mode.search("vs") != -1){
-                        var time_diff = score_diff / 200.0;
+                        var time_diff = score_diff / 133.3333;
                         this.panel.score_label.addRemainingTime(time_diff);     //残り時間を追加する
                     }
                     
@@ -2179,7 +2181,7 @@ var CPUTask = enchant.Class.create(TaskBase, {
     
     execute : function(){
         var info = this.ai.think();
-        this.task_manager.add(new CPUOperateTask(this.task_manager, info, 5, this.operator, this.opponent_manager));
+        this.task_manager.add(new CPUOperateTask(this.task_manager, info, 10, this.operator, this.opponent_manager));
     }
 });
 
@@ -2480,8 +2482,8 @@ var StartOperator = enchant.Class.create(InputOperator, {
         var mode_name = "", panel = this.input_manager.stage.getPanel();
         panel.score_label = new Score(0, 0, (this.screen.selected_menu_num == 2), panel.field.y);
         this.input_manager.stage.addChild(panel.score_label);
-        panel.item_inventory = new ItemInventory(panel.field.x + panel.field.width - 100, 0, panel.field.y);
-        this.input_manager.stage.addChild(panel.item_inventory);
+        //panel.item_inventory = new ItemInventory(panel.field.x + panel.field.width - 100, 0, panel.field.y);
+        //this.input_manager.stage.addChild(panel.item_inventory);
         game.is_survival = (this.screen.selected_menu_num == 1);
         
         if(this.screen.selected_menu_num == 2){
@@ -2493,6 +2495,7 @@ var StartOperator = enchant.Class.create(InputOperator, {
             this.task_manager.add(piece_task);
             this.task_manager.add(new TimeTakerTask(this.task_manager, panel.score_label));
             this.task_manager.add(new TimeTakerTask(this.task_manager, opponent_manager.panel.score_label));
+            game.shows_conversation = false;
             mode_name = "vs_cpu";
         }else{
             mode_name = "one_player";
@@ -2577,12 +2580,12 @@ var OpponentManager = enchant.Class.create(Manager, {
         Manager.call(this, stage);
         
         var panel = stage.getPanel();
-        this.panel = new Panel(32 * NUM_HORIZONTAL_BLOCKS, 32 * NUM_VERTICAL_BLOCKS, x, 80, xml_manager);
+        this.panel = new Panel(32 * NUM_HORIZONTAL_BLOCKS, 32 * NUM_VERTICAL_BLOCKS, x, 80, xml_manager, stage);
         this.panel.score_label = new Score(panel.field.x + panel.field.width, 0, true, this.panel.field.y);
-        this.panel.item_inventory = new ItemInventory(game.width - 100, 0, panel.field.y);
+        //this.panel.item_inventory = new ItemInventory(game.width - 100, 0, panel.field.y);
         this.stage.addChild(this.panel.field);
         this.stage.addChild(this.panel.score_label);
-        this.stage.addChild(this.panel.item_inventory);
+        //this.stage.addChild(this.panel.item_inventory);
         this.task_manager = null;
         this.input_operator = new NormalOperator(this.panel);
         this.input_operator.setInputManager(stage.getManager("input"));
@@ -2616,7 +2619,7 @@ var Stage = enchant.Class.create(enchant.Group, {
         var managers = {xml : xml_manager, tag : new TagManager(this), sound : new SoundManager(this), label : new LabelManager(this),
             effect : new EffectManager(this), input : new InputManager(this), task : new TaskManager(this), image : new ImageManager(this)
         };
-		var panel = new Panel(32 * NUM_HORIZONTAL_BLOCKS, 32 * NUM_VERTICAL_BLOCKS, 160, 80, xml_manager);
+		var panel = new Panel(32 * NUM_HORIZONTAL_BLOCKS, 32 * NUM_VERTICAL_BLOCKS, 160, 80, xml_manager, this);
         panel.next_piece_label = new NextPieceLabel(0, panel.field.y, panel.field.x, panel.field.height);
         var piece_task = new CreateShapeTask(managers.task, panel, new PieceFactory());
         piece_task.setNextPieces();     //最初に出現するピースを設定しておく
@@ -2735,8 +2738,8 @@ window.onload = function(){
 	game = new enchant.nineleap.memory.Game(880, 760);
 	game.fps = 30;
 	game.preload(ImagePaths.concat('images/pad.png'));
-	game._debug = true;
-    enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
+	game._debug = false;
+    //enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
     game.memory.player.preload();
     game.memories.ranking.preload();
     enchant.Sound.enabledInMobileSafari = true;

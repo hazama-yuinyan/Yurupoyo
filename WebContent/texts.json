@@ -34,10 +34,18 @@
             "pause" : {
                 "explanation" : "Pキー、またはクリック・タッチでゲームを再開します"
             },
+            
+            "end" : {
+                "wait_message" : "しばらくお待ちください..."
+            },
     
             "panel" : {
                 "manual_link" : "manual.html"
-            }
+            },
+            
+            "items" : ["主人公(?)の底力", "罰金バッキンガム", "イリュージョン", "妄想が止まらへ〜ん", "おっぱいマジック", 
+                "", "おっぱい禁止！", ""
+                ]
         },
         "en" : {
             "start" : {
@@ -50,15 +58,22 @@
             "pause" : {
                 "explanation" : "Press the P key or click/touch the screen to resume the game"
             },
+            
+            "end" : {
+                "wait_message" : "Just wait a minute..."
+            },
     
             "panel" : {
                 "manual_link" : "manual_en.html"
             }
         },
         "common" : {
-            "results" : 
-            ["SHOW ME YOUR BEST!", "KEEP GOING", "GREAT", "EXCELLENT", "WOW! FANTASTIC", "OUTSTANDING!", "THE MASTER OF THE GAME!"],
-            "home_button" : "<a href=\"http://funprogramming.ojaru.jp\"  target=\"_blank\" style=\"border: outset 5px #aaaaaa; border-radius: 30px; color: #000000; background-color: #aaaaaa; box-shadow: 2px 2px 1px #bbbcbc; text-decoration: none;background: -moz-linear-gradient(top, #fff, #F1F1F1 1%, #F1F1F1 50%, #DFDFDF 99%, #ccc);background: -webkit-gradient(linear, left top, left bottom, from(#fff), color-stop(0.01, #F1F1F1),color-stop(0.5, #F1F1F1), color-stop(0.99, #DFDFDF), to(#ccc));\">HOME</a>",
+            "results" : {
+                "one" :
+                ["SHOW ME YOUR BEST!", "KEEP GOING", "GREAT", "EXCELLENT", "WOW! FANTASTIC", "OUTSTANDING!", "THE MASTER OF THE GAME!"],
+                "vs" : ["YOU WIN!", "YOU LOSE..."]
+            },
+            "home_button" : "<a href=\"http://9leap.net/games/1276\"  target=\"_blank\" style=\"border: outset 5px #aaaaaa; border-radius: 30px; color: #000000; background-color: #aaaaaa; box-shadow: 2px 2px 1px #bbbcbc; text-decoration: none;background: -moz-linear-gradient(top, #fff, #F1F1F1 1%, #F1F1F1 50%, #DFDFDF 99%, #ccc);background: -webkit-gradient(linear, left top, left bottom, from(#fff), color-stop(0.01, #F1F1F1),color-stop(0.5, #F1F1F1), color-stop(0.99, #DFDFDF), to(#ccc));\">HOME</a>",
             "manual_base" : "<a href=\"TARGET_URL\" target=\"_blank\" style=\"border: outset 5px #aaaaaa; border-radius: 30px; color: #000000; background-color: #aaaaaa; box-shadow: 2px 2px 1px #bbbcbc; text-decoration: none; background: -moz-linear-gradient(top, #fff, #F1F1F1 1%, #F1F1F1 50%, #DFDFDF 99%, #ccc); background: -webkit-gradient(linear, left top, left bottom, from(#fff), color-stop(0.01, #F1F1F1),color-stop(0.5, #F1F1F1), color-stop(0.99, #DFDFDF), to(#ccc));\">MANUAL</a>"
         }
     }
