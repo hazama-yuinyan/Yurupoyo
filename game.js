@@ -1102,7 +1102,7 @@ var XmlManager = enchant.Class.create(Manager, {
         Manager.call(this, stage);
         
 		var http_obj = new XMLHttpRequest(), http_obj2 = new XMLHttpRequest();
-		var definitions = [], headers = [], max_nums = {}, texts = null, expr_evaluator = new ExpressoEvaluator();
+		var definitions = [], headers = [], max_nums = {}, texts = null, expr_evaluator = new ExpressoMin();
 		var variable_store = new VarStore();
 		var now = new Date();
 		variable_store.addVar("now", {year : now.getFullYear(), month : now.getMonth() + 1, date : now.getDate(), day : now.getDay(),
@@ -2739,7 +2739,7 @@ window.onload = function(){
 	game.fps = 30;
 	game.preload(ImagePaths.concat('images/pad.png'));
 	game._debug = false;
-    //enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
+    enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
     game.memory.player.preload();
     game.memories.ranking.preload();
     enchant.Sound.enabledInMobileSafari = true;
