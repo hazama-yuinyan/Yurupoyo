@@ -83,6 +83,7 @@
 		<chinatsu with="akari" effect="Label" start_time="15" end_time="40">またキスの練習しよ～</chinatsu>
 		<akari with="chinatsu" effect="Label + PieceFrameEffect" frame="[confused]" start_time="20" end_time="40">えええええ！？</akari>
 	</set>
+    <!--***************-->
 	
 	<!-- 結衣とちなつ -->
 	<set num="1">
@@ -91,6 +92,7 @@
 		<chinatsu with="yui" effect="Label + PieceFrameEffect + Sound" style="font: $font_large" frame="[enchanted]" src="$paths.VERY_SHINING" start_time="40" end_time="60">もう私、このまま天からお迎えが来ちゃってもいいかも・・・</chinatsu>
 		<yui with="chinatsu" effect="Label + PieceFrameEffect" frame="[bitter smile]" start_time="40" end_time="60">いや、それは私が困るから・・・</yui>
 	</set>
+    <!--****************-->
 	
 	<!-- 結衣と京子 -->
 	<set num="1">
@@ -98,13 +100,15 @@
 		<kyoko with="yui" effect="Label" start_time="25" end_time="45">もしかしたら何かネタやるかも！</kyoko>
 		<yui with="kyoko" effect="Label" start_time="30" end_time="45">あの挨拶はなんだったんだよ！っていうかＣＭってなに？！</yui>
 	</set>
-	
+	<!--****************-->
+    
 	<set num="2">
 		<kyoko with="yui" effect="Label" end_time="15">＼きらきらにゃ～んにゃ～ん／</kyoko>
 		<yui with="kyoko" effect="Label" start_time="5" end_time="20">・・いきなりどうした</yui>
 		<kyoko with="yui" effect="Label" style="font: $font_large" start_time="20" end_time="40">＼きらきらにゃ～んにゃ～ん／</kyoko>
 		<yui with="kyoko" effect="Label + PieceFrameEffect" style="font: $font_very_large" frame="[angry]" start_time="25" end_time="40">少し黙れよ！</yui>
 	</set>
+    <!--****************-->
 	
 	<set num="3" enable_if="12 = $now.month or $now.month &lt; 3">
 		<kyoko with="yui" effect="Label" end_time="20">いや～、すっかり冬ですな～</kyoko>
@@ -114,6 +118,7 @@
 		<kyoko with="yui" effect="Label + PieceFrameEffect + Sound" frame="[charming]" src="$paths.SHINING" start_time="40" end_time="60">みんな、手うがしようね！</kyoko>
 		<yui with="kyoko" effect="Label" start_time="40" end_time="60">それが言いたいだけかよ！</yui>
 	</set>
+    <!--****************-->
 	
 	<set num="4" enable_if="$kyoko.y &lt;= $field.height / 3">
 		<kyoko with="yui" effect="Label + PieceFrameEffect" frame="[scared]" start_time="0" end_time="20">わ〜ん、結衣〜、高いとこ怖いよ〜</kyoko>
@@ -123,6 +128,7 @@
 		<kyoko with="yui" effect="Label + PieceFrameEffect + Sound" frame="[charming]" src="$paths.VERY_SHINING" start_time="60" end_time="80">うっそぴょ〜ん♪</kyoko>
 		<yui with="kyoko" effect="Label + PieceFrameEffect" style="font: $font_very_large" frame="[angry]" start_time="70" end_time="90">私の心配を返せ！</yui>
 	</set>
+    <!--****************-->
 	
 	<!-- 京子と綾乃 -->
 	<set num="1">
@@ -133,6 +139,7 @@
 		<ayano with="kyoko" effect="Label + PieceFrameEffect" frame="[embarrassed]" start_time="60" end_time="80">な、なんでもないわ。今のは忘れて</ayano>
 		<kyoko with="ayano" effect="Label + PieceFrameEffect" frame="[astonished]" start_time="60" end_time="80">変な綾乃</kyoko>
 	</set>
+    <!--****************-->
 	
 	<!-- 結衣とあかり -->
 	<set num="1">
@@ -142,7 +149,8 @@
 		<yui with="akari" effect="Label" end_time="20">あかり～！</yui>
 		<yui with="akari" effect="Label" start_time="20" end_time="40">ホント不憫な子・・・</yui>
 	</set>
-	
+	<!--****************-->
+    
 	<!-- 向日葵と櫻子 -->
 	<set num="1">
 		<sakurako with="himawari" effect="Label" end_time="20">ああ～、勉強疲れた～。中学生やめたい～</sakurako>
@@ -150,7 +158,8 @@
 		<sakurako with="himawari" effect="Label + PieceFrameEffect" frame="[timid]" start_time="40" end_time="60">じゃあ早く大人になりたい～</sakurako>
 		<himawari with="sakurako" effect="Label" start_time="60" end_time="90">あんたみたいなのが大人になったら、社会が迷惑しますわ</himawari>
 	</set>
-	
+	<!--****************-->
+    
 	<!-- 千歳と綾乃 -->
 	<set num="1">
 		<ayano with="chitose" effect="Label" end_time="20">千歳～</ayano>
@@ -159,14 +168,16 @@
 		<ayano with="chitose" effect="Label + PieceFrameEffect" frame="[relaxed]" start_time="40" end_time="60">（でも、あなたがそばにいてくれるとなんだか心が落ち着くのよね）</ayano>
 		<ayano with="chitose" effect="Label" start_time="60" end_time="80">（ありがとね、千歳）</ayano>
 	</set>
+    <!--****************-->
 	
 	<!-- 京子とちなつ -->
 	<set num="1">
-		<kyoko with="chinatsu" effect="Label + PieceFrameEffect" frame="[wanting to kiss]" end_time="20">ちなつちゃ～ん、ちゅっちゅー！</kyoko>
+		<kyoko with="chinatsu" effect="Label + PieceFrameEffect" frame="[wanting to kiss]" end_time="20">ちなちゅ〜、ちゅっちゅー！</kyoko>
 		<chinatsu with="kyoko" effect="Label + PieceFrameEffect" frame="[refusing]" end_time="20">ちょっと、京子先輩！やめてください</chinatsu>
 		<kyoko with="chinatsu" effect="Label + PieceFrameEffect" frame="[timid]" start_time="20" end_time="40">え～、ちょっとぐらいいいじゃ～ん</kyoko>
 		<chinatsu with="kyoko" effect="Label + PieceFrameEffect" frame="[angry]" start_time="40" end_time="60">よくないです！</chinatsu>
 	</set>
+    <!--****************-->
 	
 	<!-- 京子とあかり -->
 	<set num="1">
@@ -178,4 +189,5 @@
 		<akari with="kyoko" effect="Label" style="font: $font_large" start_time="50" end_time="70">京子ちゃん、あかり死んでないよ！死んでないから～！</akari>
 		<akari with="kyoko" effect="PieceFrameEffect + OpacityChangeEffect" value="1" frame="[crying]" start_time="50"></akari>
 	</set>
+    <!--****************-->
 </Effects>

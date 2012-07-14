@@ -1215,6 +1215,12 @@ var XmlManager = enchant.Class.create(Manager, {
 				if(results.length != 0){
                     return results;
 				}
+                var results = definitions.filter(function(definition){
+    				return(definition.name.search(target, "i") != -1 && definition['with'] && definition['with'].search(name, "i") != -1);
+				});
+                if(results.length != 0){
+                    return results;
+    			}
 			}
             
 			var results = definitions.filter(function(definition){
@@ -1357,26 +1363,26 @@ var TagManager = enchant.Class.create(Manager, {
                 if(!this.effect_manager){this.effect_manager = this.manager.effect_manager;}
                 
                 switch(tag_obj.effect){
-                case "PieceFrameEffect":
+                case "pieceframeeffect":
         			var frame = this.xml_manager.replaceVars(this.putInContext(tag_obj.frame));
     				this.effect_manager.add(new PieceFrameEffect(this.objs, frame, game.frame + tag_obj.start_time));
     				break;
     
-    			case "OpacityChangeEffect":
+    			case "opacitychangeeffect":
     				this.effect_manager.add(new OpacityChangeEffect(this.objs, tag_obj.value, game.frame + tag_obj.start_time));
     				break;
     
-    			case "FadeInEffect":
+    			case "fadeineffect":
     				this.effect_manager.add(new FadeInEffect(this.objs, game.frame + tag_obj.start_time, game.frame + tag_obj.end_time,
                         tag_obj.rate));
     				break;
     
-    			case "FadeOutEffect":
+    			case "fadeouteffect":
     				this.effect_manager.add(new FadeOutEffect(this.objs, game.frame + tag_obj.start_time, game.frame + tag_obj.end_time,
                         tag_obj.rate));
     				break;
     
-    			case "RandomVibrationEffect":
+    			case "randomvibrationeffect":
     				this.effect_manager.add(new TimeIndependentVibrationEffect(this.objs[0], this.objs[0].x - tag_obj.amplitude_x
     						, this.objs[0].x + tag_obj.amplitude_x, this.objs[0].y - tag_obj.amplitude_y, this.objs[0].y + tag_obj.amplitude_y
     						, tag_obj.max_rate, game.frame + tag_obj.end_time, game.frame + tag_obj.start_time));
@@ -1455,12 +1461,12 @@ var TagManager = enchant.Class.create(Manager, {
         tag_objs.forEach(function(tag_obj){
             if(tag_obj.num != -1 && tag_obj.type != getPropertyName(PieceTypes, pieces[0].type)){return;}
             
-            var label = null, tmp_tag = tag_obj.copyFrom(), types = tag_obj.effect.toLowerCase().split(/\s*\+\s*/);
+            var label = null, tmp_tag = tag_obj.copyFrom(), types = tmp_tag.effect.toLowerCase().split(/\s*\+\s*/);
             types.forEach(function(type){
                 var interpreter_type = type;
                 if(type.search(/effect$/) != -1){
                     interpreter_type = "effect";
-                    tag_obj.effect = type;
+                    tmp_tag.effect = type;
                     this.child_interpreters["effect"].setObjs(label && [label] || pieces);
                 }
                 
