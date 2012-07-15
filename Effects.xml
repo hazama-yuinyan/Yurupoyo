@@ -52,7 +52,8 @@
             crying : 6; shocked : 7; forced_smile : 8; blank : 9; panicked : 10; smiling : 11</template>
 		<template name="chinatsu" style="background-color: #ffffff; border: outset 3px $chinatsu.color; border-radius: 3px; font: $default_font" x="average with margin" y="average with margin">normal : 0; happy : 4; enchanted : 5;
             shocked : 6; angry : 7; disgusted : 8; tricking : 9; refusing : 10</template>
-		<template name="yui" style="background-color: #ffffff; border: outset 3px $yui.color; border-radius: 3px; font: $default_font" x="average with margin" y="average with margin">normal : 0; angry : 4; confused : 5; bitter_smile : 6; shocked : 7</template>
+		<template name="yui" style="background-color: #ffffff; border: outset 3px $yui.color; border-radius: 3px; font: $default_font" x="average with margin" y="average with margin">normal : 0; angry : 4; confused : 5; bitter_smile : 6; shocked : 7;
+    	    struck_dumb : 8</template>
 		<template name="kyoko" style="background-color: #ffffff; border: outset 3px $kyoko.color; border-radius: 3px; font: $default_font" x="average with margin" y="average with margin">normal : 0; charming : 4; scared : 5; smiling : 6; astonished : 7;
             timid : 8; wanting_to_kiss : 9; weeping : 10</template>
 		<template name="ayano" style="background-color: #ffffff; border: outset 3px $ayano.color; border-radius: 3px; font: $default_font" x="average with margin" y="average with margin">normal : 0; embarrassed : 4; angry : 5; relaxed : 6; flinched : 7</template>
@@ -104,7 +105,7 @@
     
 	<set num="2">
 		<kyoko with="yui" effect="Label" end_time="15">＼きらきらにゃ～んにゃ～ん／</kyoko>
-		<yui with="kyoko" effect="Label" start_time="5" end_time="20">・・いきなりどうした</yui>
+		<yui with="kyoko" effect="Label + PieceFrameEffect" frame="[struck_dumb]" start_time="5" end_time="20">・・いきなりどうした</yui>
 		<kyoko with="yui" effect="Label" style="font: $font_large" start_time="20" end_time="40">＼きらきらにゃ～んにゃ～ん／</kyoko>
 		<yui with="kyoko" effect="Label + PieceFrameEffect" style="font: $font_very_large" frame="[angry]" start_time="25" end_time="40">少し黙れよ！</yui>
 	</set>
@@ -147,7 +148,7 @@
 		<akari with="yui" effect="FadeOutEffect" rate="0.05" end_time="20"></akari>
 		<akari with="yui" effect="PieceFrameEffect" frame="[transparent]" start_time="0"></akari>
 		<yui with="akari" effect="Label" end_time="20">あかり～！</yui>
-		<yui with="akari" effect="Label" start_time="20" end_time="40">ホント不憫な子・・・</yui>
+		<yui with="akari" effect="Label + PieceFrameEffect" frame="[bitter_smile]" start_time="20" end_time="40">ホント不憫な子・・・</yui>
 	</set>
 	<!--****************-->
     
