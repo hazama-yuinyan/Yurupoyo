@@ -46,15 +46,15 @@
         </variables>
 		<colors tags="akari, ayano, chinatsu, chitose, himawari, kyoko, sakurako, yui, COUPLING">rgb(233, 109, 140); rgb(138, 73, 108); rgb(252, 209, 219); rgb(222, 217, 240); rgb(103, 122, 157);
             rgb(234, 223, 186); rgb(232, 205, 182); rgb(84, 61, 70); rgb(255, 131, 39)</colors>
-        <paths names="BANG1, BANG2, BANG3, BANG4, BANG5, BANG6, BANG7, BANG8, AKKARIN, SHINING, VERY_SHINNG">sounds/bang1.ogg; sounds/bang2.ogg; sounds/bang3.ogg; sounds/bang4.ogg; sounds/bang5.ogg; sounds/bang6.ogg;
+        <paths names="BANG1, BANG2, BANG3, BANG4, BANG5, BANG6, BANG7, BANG8, AKKARIN, SHINING, VERY_SHINING">sounds/bang1.ogg; sounds/bang2.ogg; sounds/bang3.ogg; sounds/bang4.ogg; sounds/bang5.ogg; sounds/bang6.ogg;
     	    sounds/bang7.ogg; sounds/bang8.ogg; sounds/akkarin.wav; sounds/shining.ogg; sounds/very_shining.ogg</paths>
 		<template name="akari" style="background-color: #ffffff; border: outset 3px $akari.color; border-radius: 3px; font: $default_font" x="average with margin" y="average with margin">normal : 0; transparent : 4; confused : 5;
-            crying : 6; shocked : 7; forced smile : 8; blank : 9; panicked : 10; smiling : 11</template>
+            crying : 6; shocked : 7; forced_smile : 8; blank : 9; panicked : 10; smiling : 11</template>
 		<template name="chinatsu" style="background-color: #ffffff; border: outset 3px $chinatsu.color; border-radius: 3px; font: $default_font" x="average with margin" y="average with margin">normal : 0; happy : 4; enchanted : 5;
             shocked : 6; angry : 7; disgusted : 8; tricking : 9; refusing : 10</template>
-		<template name="yui" style="background-color: #ffffff; border: outset 3px $yui.color; border-radius: 3px; font: $default_font" x="average with margin" y="average with margin">normal : 0; angry : 4; confused : 5; bitter smile : 6; shocked : 7</template>
+		<template name="yui" style="background-color: #ffffff; border: outset 3px $yui.color; border-radius: 3px; font: $default_font" x="average with margin" y="average with margin">normal : 0; angry : 4; confused : 5; bitter_smile : 6; shocked : 7</template>
 		<template name="kyoko" style="background-color: #ffffff; border: outset 3px $kyoko.color; border-radius: 3px; font: $default_font" x="average with margin" y="average with margin">normal : 0; charming : 4; scared : 5; smiling : 6; astonished : 7;
-            timid : 8; wanting to kiss : 9; weeping : 10</template>
+            timid : 8; wanting_to_kiss : 9; weeping : 10</template>
 		<template name="ayano" style="background-color: #ffffff; border: outset 3px $ayano.color; border-radius: 3px; font: $default_font" x="average with margin" y="average with margin">normal : 0; embarrassed : 4; angry : 5; relaxed : 6; flinched : 7</template>
 		<template name="chitose" style="background-color: #ffffff; border: outset 3px $chitose.color; border-radius: 3px; font: $default_font" x="average with margin" y="average with margin">normal : 0; gone : 4; smiling : 5</template>
 		<template name="himawari" style="background-color: #ffffff; border: outset 3px $himawari.color; border-radius: 3px; font: $default_font" x="average with margin" y="average with margin">normal : 0; angry : 4; disgusted : 5; doubting : 6</template>
@@ -90,7 +90,7 @@
 		<chinatsu with="yui" effect="Label + PieceFrameEffect" style="font: $font_large" frame="[happy]" start_time="0" end_time="20">きゃ～結衣せんぱぁ～い！</chinatsu>
 		<chinatsu with="yui" effect="Label" start_time="20" end_time="40">結衣先輩と一緒に消えれるなんてこの上ない幸せですぅ～！</chinatsu>
 		<chinatsu with="yui" effect="Label + PieceFrameEffect + Sound" style="font: $font_large" frame="[enchanted]" src="$paths.VERY_SHINING" start_time="40" end_time="60">もう私、このまま天からお迎えが来ちゃってもいいかも・・・</chinatsu>
-		<yui with="chinatsu" effect="Label + PieceFrameEffect" frame="[bitter smile]" start_time="40" end_time="60">いや、それは私が困るから・・・</yui>
+		<yui with="chinatsu" effect="Label + PieceFrameEffect" frame="[bitter_smile]" start_time="40" end_time="60">いや、それは私が困るから・・・</yui>
 	</set>
     <!--****************-->
 	
@@ -172,7 +172,7 @@
 	
 	<!-- 京子とちなつ -->
 	<set num="1">
-		<kyoko with="chinatsu" effect="Label + PieceFrameEffect" frame="[wanting to kiss]" end_time="20">ちなちゅ〜、ちゅっちゅー！</kyoko>
+		<kyoko with="chinatsu" effect="Label + PieceFrameEffect" frame="[wanting_to_kiss]" end_time="20">ちなちゅ〜、ちゅっちゅー！</kyoko>
 		<chinatsu with="kyoko" effect="Label + PieceFrameEffect" frame="[refusing]" end_time="20">ちょっと、京子先輩！やめてください</chinatsu>
 		<kyoko with="chinatsu" effect="Label + PieceFrameEffect" frame="[timid]" start_time="20" end_time="40">え～、ちょっとぐらいいいじゃ～ん</kyoko>
 		<chinatsu with="kyoko" effect="Label + PieceFrameEffect" frame="[angry]" start_time="40" end_time="60">よくないです！</chinatsu>

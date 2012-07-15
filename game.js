@@ -1268,7 +1268,7 @@ var XmlManager = enchant.Class.create(Manager, {
 
 		this.verify = function(condition){
 			if(condition == undefined){return true;}
-			return expr_evaluator.eval(condition);
+			return expr_evaluator.evaluate(condition);
 		}
 	}
 });
@@ -1348,10 +1348,15 @@ var TagManager = enchant.Class.create(Manager, {
                 this.xml_manager = null;
                 this.effect_manager = null;
                 this.objs = null;
+                this.pieces = null;
             },
             
             setObjs : function(objs){
                 this.objs = objs;
+            },
+            
+            setPieces : function(pieces){
+                this.pieces = pieces;
             },
             
             putInContext : function(str, context){
@@ -1364,8 +1369,8 @@ var TagManager = enchant.Class.create(Manager, {
                 
                 switch(tag_obj.effect){
                 case "pieceframeeffect":
-        			var frame = this.xml_manager.replaceVars(this.putInContext(tag_obj.frame));
-    				this.effect_manager.add(new PieceFrameEffect(this.objs, frame, game.frame + tag_obj.start_time));
+        			var frame = this.xml_manager.replaceVars(this.putInContext(tag_obj.frame, "$" + tag_obj.name));
+    				this.effect_manager.add(new PieceFrameEffect(this.pieces, frame, game.frame + tag_obj.start_time));
     				break;
     
     			case "opacitychangeeffect":
@@ -1464,6 +1469,7 @@ var TagManager = enchant.Class.create(Manager, {
             var label = null, tmp_tag = tag_obj.copyFrom(), types = tmp_tag.effect.toLowerCase().split(/\s*\+\s*/);
             types.forEach(function(type){
                 var interpreter_type = type;
+                this.child_interpreters["effect"].setPieces(pieces);
                 if(type.search(/effect$/) != -1){
                     interpreter_type = "effect";
                     tmp_tag.effect = type;
@@ -1702,7 +1708,7 @@ var PieceFrameEffect = enchant.Class.create(Effect, {
 		Effect.call(this, time_to_start_affecting + 1, time_to_start_affecting);
 
 		this.targets = pieces;
-		this.frame = frame;
+		this.frame = parseInt(frame, 10);
 	},
 
 	update : function(){
