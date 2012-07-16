@@ -5,7 +5,7 @@
  *
  * Copyright (c) HAZAMA
  * http://funprogramming.ojaru.jp
- * Licensed under the GPL Version 3 licenses
+ * Licensed under the GPL Version 3 license
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -405,8 +405,8 @@ var StartScreen = enchant.Class.create(enchant.Group, {
 
 var GameOver = enchant.Class.create({
 	initialize : function(stage){
-        var xml_manager = stage.getManager("xml"), player_score = stage.getPanel().score_label, opponent_score = stage.getManager("opponent").panel.score_label;
-        game.memory.player.data = {is_survival : game.is_survival};
+        var xml_manager = stage.getManager("xml"), player_score = stage.getPanel().score_label;
+        game.memory.player.data = {is_survival : game.is_survival, is_vs : game.mode.search("vs") != -1};
         game.memory_update();
         
         var result_texts = xml_manager.getText("texts").common.results[game.mode.split("_")[0]];
@@ -426,7 +426,6 @@ var GameOver = enchant.Class.create({
             return evalScoreSlow(Math.floor(score * 2));
         };
         
-        var diff_score = player_score.getScore() - opponent_score.getScore(), diff_time = player_score.getRemainingTime() - opponent_score.getRemainingTime();
         var label = new enchant.Label(xml_manager.getText("texts")[system_lang].end.wait_message);
         label.font = "normal x-large 'うずらフォント', serif";
         setRulerStyle(" font: " + label.font);
@@ -434,8 +433,16 @@ var GameOver = enchant.Class.create({
         label.moveTo(game.width / 2 - size.width / 2, 280);
         label.width = size.width;
         stage.addChild(label);
-        game.end(player_score.getScore(), (game.mode.search("vs") != -1) ? evalVersus(diff_score, diff_time) :
-            (game.is_survival) ? evalScoreFast(player_score.getScore()) : evalScoreSlow(player_score.getScore()));
+        
+        var result_text = "";
+        if(game.mode.search("vs") != -1){
+            var opponent_score = stage.getManager("opponent").panel.score_label;
+            var diff_score = player_score.getScore() - opponent_score.getScore(), diff_time = player_score.getRemainingTime() - opponent_score.getRemainingTime();
+            result_text = evalVersus(diff_score, diff_time);
+        }else{
+            result_text = (game.is_survival) ? evalScoreFast(player_score.getScore()) : evalScoreSlow(player_score.getScore());
+        }
+        game.end(player_score.getScore(), result_text);
 	}
 });
 
@@ -484,13 +491,14 @@ var PauseScreen = enchant.Class.create(enchant.Group, {
 		ranking_list.appendChild(ranking_title);
 		ranking_list.appendChild(document.createElement("br"));
         
-        var user_name = game.memory.player.name, json_obj = game.memories.ranking;
+        var user_name = game.memory.player.screen_name, json_obj = game.memories.ranking;
         for(var i = 0; i < json_obj.length; ++i){
         	var line = document.createElement("span"), obj = json_obj[i];
-			var is_survival = (obj.data.is_survival) ? "（サバイバル）" : "（ゆったり）";
-			line.textContent = (i + 1) + " " + obj.name + " " + obj.score + " " + is_survival;
+			var mode_name = (obj.data.is_survival) ? "（サバイバル）" : 
+                            (obj.data.is_vs) ? "（対CPU）" : "（ゆったり）";
+			line.textContent = (i + 1) + " " + obj.screen_name + " " + obj.score + " " + mode_name;
 			var style;
-			if(user_name && obj.name.search(user_name.replace(/[\(\)\$\[\]\.\?\*\+\^\!\{\}\\\|\/]/g, "\\$&")) != -1){
+			if(user_name && obj.screen_name.search(user_name.replace(/[\(\)\$\[\]\.\?\*\+\^\!\{\}\\\|\/]/g, "\\$&")) != -1){
 				style = "color: #ff1012; font: bold large 'うずらフォント'";
 			}else{
 				style = "color: #000000; font: italic large 'うずらフォント'";
@@ -2751,7 +2759,7 @@ window.onload = function(){
 	game.fps = 30;
 	game.preload(ImagePaths.concat('images/pad.png'));
 	game._debug = false;
-    enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
+    //enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
     game.memory.player.preload();
     game.memories.ranking.preload();
     enchant.Sound.enabledInMobileSafari = true;
