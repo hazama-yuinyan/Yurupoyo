@@ -2693,34 +2693,45 @@ var Stage = enchant.Class.create(enchant.Group, {
             });
         });
 
-        var pad = new enchant.Sprite(100, 100);
-        pad.moveTo(50, panel.manual_button.y - pad.height - 30);
-        pad.image = game.assets['images/pad.png'];
-        this.addChild(pad);
-        
-		var touched = false, margin = 5;
-		var isInPad = function(x, y){
-			return (pad.x - margin <= x && x <= pad.x + pad.width + margin && pad.y - margin <= y && y <= pad.y + pad.height + margin);
+		var touched = false, last_pos = null, last_touched_frame = -1;
+		var isInGameScreen = function(x, y){
+			return (panel.field.x <= x && x <= panel.field.x + panel.field.width && panel.field.y <= y && y <= panel.field.y + panel.field.height);
 		}
 
 		this.addEventListener('touchstart', function(e){
-			if(isInPad(e.x, e.y)){
+			if(isInGameScreen(e.x, e.y)){
 				touched = true;
+                last_pos = {x : e.x, y : e.y};
+                last_touched_frame = game.frame;
 			}
 		});
+        
+        this.addEventListener('touchmove', function(e){
+            if(touched){
+                if(e.x < last_pos.x - 5){
+    			    game.input.left = true;
+				}else if(last_pos.x + 5 < e.x){
+                    game.input.right = true;
+				}else if(e.y < last_pos.y - 5){
+                    game.input.up = true;
+				}else if(last_pos.y + 5 < e.y){
+                    game.input.down = true;
+				}
+                last_pos = {x : e.x, y : e.y};
+            }
+        });
 
 		this.addEventListener('touchend', function(e){
 			if(touched){
-                var center = {x : pad.x + pad.width / 2, y : pad.y + pad.height / 2};
-				if(isInRangeOnValue(20, e.x, center.x) && isInRangeOnValue(20, e.y, center.y)){ //中心から20ピクセル以内にタッチしたらAボタン
+				if(game.frame < last_touched_frame + 5 && isInRangeOnValue(5, last_pos.x, e.x) && isInRangeOnValue(5, last_pos.y, e.y)){ //ゲームスクリーン内をタッチしたらAボタン
 					game.input.a = true;
-				}else if(isInRange(pad.x, center.x, e.x) && isInRangeOnValue(20, e.y, center.y)){
-				    game.input.left = true;
-				}else if(isInRange(center.x, pad.x + pad.width, e.x) && isInRangeOnValue(20, e.y, center.y)){
+				}else if(e.x < last_pos.x - 5){
+        		    game.input.left = true;
+				}else if(last_pos.x + 5 < e.x){
                     game.input.right = true;
-				}else if(isInRangeOnValue(20, e.x, center.x) && isInRange(pad.y, center.y, e.y)){
+				}else if(e.y < last_pos.y - 5){
                     game.input.up = true;
-				}else if(isInRangeOnValue(20, e.x, center.x) && isInRange(center.y, pad.y + pad.height, e.y)){
+				}else if(last_pos.y + 5 < e.y){
                     game.input.down = true;
 				}
 
@@ -2757,9 +2768,9 @@ var Stage = enchant.Class.create(enchant.Group, {
 window.onload = function(){
 	game = new enchant.nineleap.memory.Game(880, 760);
 	game.fps = 30;
-	game.preload(ImagePaths.concat('images/pad.png'));
+	game.preload(ImagePaths);
 	game._debug = false;
-    //enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
+    enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
     game.memory.player.preload();
     game.memories.ranking.preload();
     enchant.Sound.enabledInMobileSafari = true;

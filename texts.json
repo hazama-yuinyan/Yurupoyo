@@ -2,23 +2,23 @@
     "reference" : {
         "ja" : [["クイックリファレンス"],
                 ["操作内容", "PC", "スマートフォン"],
-                ["右に移動", "矢印キー右、またはバーチャルパッドの右ボタン", "バーチャルパッドの右ボタンをタップ"],
-                ["左に移動", "矢印キー左、またはバーチャルパッドの左ボタン", "バーチャルパッドの左ボタンをタップ"],
-                ["時計回りに回転", "矢印キー下、またはバーチャルパッドの下ボタン", "バーチャルパッドの下ボタンをタップ"],
-                ["反時計回りに回転", "矢印キー上、またはバーチャルボタンの上ボタン", "バーチャルパッドの上ボタンをタップ"],
-                ["ピースを着地", "スペースキー、またはバーチャルパッドの中心付近をクリック", "バーチャルパッドの中心付近をタップ"],
+                ["右に移動", "矢印キー右、またはフィールド内で右にドラッグ", "フィールド内で右にフリック"],
+                ["左に移動", "矢印キー左、またはフィールド内で左にドラッグ", "フィールド内で左にフリック"],
+                ["時計回りに回転", "矢印キー下、またはフィールド内で下にドラッグ", "フィールド内で下にフリック"],
+                ["反時計回りに回転", "矢印キー上、またはフィールド内で上にドラッグ", "フィールド内で上にフリック"],
+                ["ピースを着地", "スペースキー、またはフィールド内をクリック", "フィールド内をタップ"],
                 ["ポーズ", "Pキー、またはSCOREのあたりをクリック", "SCOREのあたりをタッチ"],
                 ["エフェクトのオン・オフ", "Mキー", "スコアの横あたりをタッチ"]
                 ],
         "en" : [["How to play"],
                 ["Reactions", "For PC", "For Smartphones"],
-                ["Move to right", "Right arrow key or click on the right button in the pad", "Tap on the right button in the pad"],
-            	["Move to left", "Left arrow key or click on the left button in the pad", "Tap on the left button in the pad"],
-        		["Rotate in clockwise", "Down arrow key or click on the down button in the pad", "Tap on the down button in the pad"],
-        		["Rotate in anti-clockwise", "Up arrow key or click on the down button in the pad", "Tap on the up button in the pad"],
-        		["Land the shape", "The space bar or click on the center of the pad", "Tap around the center of the pad"],
+                ["Move to right", "Right arrow key or drag to the right on the field", "Flick to the left on the field"],
+            	["Move to left", "Left arrow key or drag to the left on the field", "Filck to the right on the field"],
+        		["Rotate in clockwise", "Down arrow key or drag to the down on the field", "Flick to the down on the field"],
+        		["Rotate in anti-clockwise", "Up arrow key or drag to the up on the field", "Flick to the up on the field"],
+        		["Land the shape", "The space bar or click on the field", "Tap on the field"],
         		["Pause", "P key or click around the \"SCORE\"", "Touch around the \"SCORE\""],
-                ["Turn off the effect", "M key", "Touch around the right side of \"SCORE\""]
+                ["Turn on/off the effects", "M key", "Touch around the right side of \"SCORE\""]
                 ]
         },
         
