@@ -1418,7 +1418,7 @@ var TagManager = enchant.Class.create(Manager, {
             interpret : function(tag_obj){
                 if(!this.sound_manager){this.sound_manager = this.manager.sound_manager;}
                 if(!this.xml_manager){this.xml_manager = this.manager.xml_manager;}
-                this.manager.setMaxEndTime(this.sound_manager.add(this.xml_manager.replaceVars(tag_obj.src)));
+                this.manager.setMaxEndTime(this.sound_manager.add(this.xml_manager.replaceVars(tag_obj.src)) || 0);
                 return null;
             }
         });
@@ -1954,6 +1954,7 @@ var UpdateDisappearingPiecesTask = enchant.Class.create(PieceTask, {
     },
     
     execute : function(){
+        if(game._debug){console.log("max end time:"+this.end_time);}
         if(game.frame > this.end_time){    	//エフェクトをかけおわるフレームになったので、その後処理をする
 			this.targets.forEach(function(piece){
 				this.panel.field.removePiece(piece);
@@ -1970,9 +1971,13 @@ var UpdateDisappearingPiecesTask = enchant.Class.create(PieceTask, {
 				this.panel.next_speed_up_score = this.score_label.getScore() + 10000;
 			}
 			
-            this.task_manager.add((this.moving_pieces.length) ?
-                new DropPiecesTask(this.task_manager, this.moving_pieces, this.panel) :   //動くピースリストが空でなければまずそれらを落下させる
-                new CreateShapeTask(this.task_manager, this.panel, new PieceFactory()));    //それ以外なら次のピースを出現させる
+            var next_task;
+            if(this.moving_pieces.length){   //動くピースリストが空でなければまずそれらを落下させる
+                next_task = new DropPiecesTask(this.task_manager, this.moving_pieces, this.panel);
+            }else{    //それ以外なら次のピースを出現させる
+                next_task = new CreateShapeTask(this.task_manager, this.panel, new PieceFactory());
+            }
+            this.task_manager.add(next_task);
 		}else{
     	    this.task_manager.add(this);
 		}
@@ -2159,7 +2164,8 @@ var MakePiecesDisappearTask = enchant.Class.create(TaskBase, {
 			}, this);
 		}, this);
 
-		if(disappearing_pieces.length){	        //消えるピースがあったら連鎖数を増やしてピースを消すタスクを設定
+		if(disappearing_pieces.length > 0){	        //消えるピースがあったら連鎖数を増やしてピースを消すタスクを設定
+        if(game._debug){console.log("disappearing pieces found");}
 			++this.panel.num_successive_scoring;
             this.task_manager.add(new UpdateDisappearingPiecesTask(this.task_manager, disappearing_pieces, this.moving_pieces, 
                 this.panel, this.tag_manager.getMaxEndTime()));
@@ -2770,7 +2776,7 @@ window.onload = function(){
 	game.fps = 30;
 	game.preload(ImagePaths);
 	game._debug = false;
-    enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
+    //enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
     game.memory.player.preload();
     game.memories.ranking.preload();
     enchant.Sound.enabledInMobileSafari = true;
