@@ -1,5 +1,20 @@
 #!/bin/bash
 
+if [ $1 = "-h" ] ; then
+	cat <<-__EOF__;
+Usage: ./connect_imgs.sh [target_names]
+
+このシェルスクリプトは個別に描いた画像を結合するためのものです。
+必ず画像を変更したらこのスクリプトを実行してください。
+なお、背景の透過処理は自動では行いませんので、GIMP等を使用して手動で(r,g,b)=(235,235,235)の色を透過色にしてください。
+
+コマンドラインの引数にターゲットとなるキャラ名を入力することでそのキャラの画像のみ結合処理を行うことができます。
+ちなみに、引数を省略した場合には全員の結合処理を行います。
+__EOF__
+
+exit 1
+fi
+
 if [ $# -eq 0 ]; then
     targets=(akari ayano chinatsu chitose himawari kyoko sakurako yui)
 else
@@ -40,6 +55,7 @@ for name in ${targets[@]} ; do
 	    ;;
 	*)
 	    echo "Unknown name!"
+	    exit 1
     esac
     output_name=`echo "piece_"$name".png"`
     echo "output file name : "$output_name

@@ -84,6 +84,15 @@
 		<chinatsu with="akari" effect="Label" start_time="15" end_time="40">またキスの練習しよ～</chinatsu>
 		<akari with="chinatsu" effect="Label + PieceFrameEffect" frame="[confused]" start_time="20" end_time="40">えええええ！？</akari>
 	</set>
+    
+    <set num="2">
+        <chinatsu with="akari" effect="Label" end_time="30">あかりちゃ〜ん！今日は特別にあかりちゃんのしてほしいことをなんでもしてあげる！</chinatsu>
+        <akari with="chinatsu" effect="Label" start_time="15" end_time="40">え、で、でも・・・</akari>
+        <chinatsu with="akari" effect="Label" start_time="30" end_time="50">も〜、ほんとに遠慮なんかしなくてもいいんだよ〜。例えばマッサージとかでも</chinatsu>
+        <akari with="chinatsu" effect="Label + PieceFrameEffect" frame="[confused]" start_time="40" end_time="60">え、遠慮なんかしてなーー</akari>
+        <chinatsu with="akari" effect="Label + PieceFrameEffect" frame="[enchanted]" start_time="50" end_time="80">そうだ！耳かきしてあげる！</chinatsu>
+        <akari with="chinatsu" effect="Label + PieceFrameEffect" style="font: $font_large" frame="[panicked]" start_time="60" end_time="80">え！？ほ、ホントにいいです！</akari>
+    </set>
     <!--***************-->
 	
 	<!-- 結衣とちなつ -->
@@ -125,7 +134,7 @@
 		<kyoko with="yui" effect="Label + PieceFrameEffect" frame="[scared]" start_time="0" end_time="20">わ〜ん、結衣〜、高いとこ怖いよ〜</kyoko>
 		<yui with="kyoko" effect="Label" end_time="20">え？お前ってそんなキャラだったっけ・・？</yui>
 		<kyoko with="yui" effect="Label" start_time="20" end_time="40">わ〜ん、結衣ひどいよぉ〜。あたしだってか弱い女の子なんだよ？</kyoko>
-		<yui with="kyoko" effect="Label + PieceFrameEffect" frame="[confused]" start_time="20" end_time="40">（これってまさか・・昔の京子に戻ってしまったんじゃ・・・）</yui>
+		<yui with="kyoko" effect="Label + PieceFrameEffect" style="border-radius: 15px" frame="[confused]" start_time="20" end_time="40">（これってまさか・・昔の京子に戻ってしまったんじゃ・・・）</yui>
 		<kyoko with="yui" effect="Label + PieceFrameEffect + Sound" frame="[charming]" src="$paths.VERY_SHINING" start_time="60" end_time="80">うっそぴょ〜ん♪</kyoko>
 		<yui with="kyoko" effect="Label + PieceFrameEffect" style="font: $font_very_large" frame="[angry]" start_time="70" end_time="90">私の心配を返せ！</yui>
 	</set>
@@ -135,8 +144,8 @@
 	<set num="1">
 		<ayano with="kyoko" effect="Label" style="font: $font_large" end_time="20">としのーきょーこー！</ayano>
 		<kyoko with="ayano" effect="Label" start_time="5" end_time="20">なぁに～、あやの～</kyoko>
-		<ayano with="kyoko" effect="Label + PieceFrameEffect" frame="[flinched]" start_time="20" end_time="40">（ととと、歳納京子！？なんでいるのよ・・・）</ayano>
-		<ayano with="kyoko" effect="Label" start_time="40" end_time="60">（誰もいないと思ってたから叫んでしまったわ・・・）</ayano>
+		<ayano with="kyoko" effect="Label + PieceFrameEffect" style="border-radius: 15px" frame="[flinched]" start_time="20" end_time="40">（ととと、歳納京子！？なんでいるのよ・・・）</ayano>
+		<ayano with="kyoko" effect="Label" style="border-radius: 15px" start_time="40" end_time="60">（誰もいないと思ってたから叫んでしまったわ・・・）</ayano>
 		<ayano with="kyoko" effect="Label + PieceFrameEffect" frame="[embarrassed]" start_time="60" end_time="80">な、なんでもないわ。今のは忘れて</ayano>
 		<kyoko with="ayano" effect="Label + PieceFrameEffect" frame="[astonished]" start_time="60" end_time="80">変な綾乃</kyoko>
 	</set>
@@ -157,17 +166,17 @@
 		<sakurako with="himawari" effect="Label" end_time="20">ああ～、勉強疲れた～。中学生やめたい～</sakurako>
 		<himawari with="sakurako" effect="Label + PieceFrameEffect" frame="[disgusted]" start_time="20" end_time="40">何言ってるんですの。中学生をやめられるはずないでしょう</himawari>
 		<sakurako with="himawari" effect="Label + PieceFrameEffect" frame="[timid]" start_time="40" end_time="60">じゃあ早く大人になりたい～</sakurako>
-		<himawari with="sakurako" effect="Label" start_time="60" end_time="90">あんたみたいなのが大人になったら、社会が迷惑しますわ</himawari>
+		<himawari with="sakurako" effect="Label" start_time="60" end_time="90">あなたみたいなのが大人になったら、社会が迷惑しますわ</himawari>
 	</set>
 	<!--****************-->
     
 	<!-- 千歳と綾乃 -->
 	<set num="1">
 		<ayano with="chitose" effect="Label" end_time="20">千歳～</ayano>
-		<chitose with="ayano" effect="Label + PieceFrameEffect" frame="[gone]" end_time="20">うふふふふ・・・</chitose>
-		<ayano with="chitose" effect="Label" start_time="20" end_time="40">（あ～あ、また自分の世界に行っちゃってるわ、この子）</ayano>
-		<ayano with="chitose" effect="Label + PieceFrameEffect" frame="[relaxed]" start_time="40" end_time="60">（でも、あなたがそばにいてくれるとなんだか心が落ち着くのよね）</ayano>
-		<ayano with="chitose" effect="Label" start_time="60" end_time="80">（ありがとね、千歳）</ayano>
+		<chitose with="ayano" effect="Label + PieceFrameEffect" frame="[gone]" start_time="0" end_time="20">うふふふふ・・・</chitose>
+		<ayano with="chitose" effect="Label" style="border-radius: 15px" start_time="20" end_time="40">（あ～あ、また自分の世界に行っちゃってるわ、この子）</ayano>
+		<ayano with="chitose" effect="Label + PieceFrameEffect" frame="[relaxed]" style="border-radius: 15px" start_time="40" end_time="60">（でも、あなたがそばにいてくれるとなんだか心が落ち着くのよね）</ayano>
+		<ayano with="chitose" effect="Label" style="border-radius: 15px" start_time="60" end_time="80">（ありがとね、千歳）</ayano>
 	</set>
     <!--****************-->
 	
