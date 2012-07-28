@@ -10,6 +10,10 @@ Usage: ./connect_imgs.sh [target_names]
 
 コマンドラインの引数にターゲットとなるキャラ名を入力することでそのキャラの画像のみ結合処理を行うことができます。
 ちなみに、引数を省略した場合には全員の結合処理を行います。
+
+
+なお、このスクリプトで実際の結合処理を行うImageConnectorという自作ツールは、画像の処理にOpenCVを使用しているのでうまく動かない場合はOpenCVをインストールしてから再度試してみてください。
+Windows用のバイナリは用意していません。どうしてもWindows上で試したいという方がいらっしゃいましたら、Twitterあたりでアプローチかけていただければソースを公開すると思います。おそらくほとんど変更なしでWin用に再コンパイルできると思います。
 __EOF__
 
 exit 1
@@ -60,8 +64,8 @@ for name in ${targets[@]} ; do
     output_name=`echo "piece_"$name".png"`
     echo "output file name : "$output_name
     if [ -f $output_name ]; then
-	echo "a file named "$output_name" found. So remove that file first."
-	rm $output_name
+		echo "a file named "$output_name" found. So remove that file first."
+		rm $output_name
     fi
     ./ImageConnector -o png -n $output_name $arg
 done

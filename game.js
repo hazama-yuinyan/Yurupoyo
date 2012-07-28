@@ -197,7 +197,7 @@ String.prototype.getExpansion = function(){
 	var expansion = {width : e.offsetWidth, height : e.offsetHeight};
 	e.removeChild(text);
 	return expansion;
-}
+};
 
 /**
  * getExpansionで使用するCSSスタイルを設定する。getExpansionを使用するにはメインのHTMLファイルにid="ruler"というdiv要素が必要です。
@@ -236,7 +236,7 @@ String.prototype.fitInWidth = function(max_width, num_lines){
 	}
 
 	return result;
-}
+};
 
 /**
  * valがlower以上upper未満であるか調べる
@@ -265,7 +265,7 @@ function isInRangeOnValue(range, target, val){
  */
 Array.prototype.contains = function(obj){
 	return (this.indexOf(obj) != -1);
-}
+};
 
 if(!Array.prototype.deepCopy){
     /**
@@ -282,10 +282,10 @@ if(!Array.prototype.deepCopy){
             }else{
                 cloned[index] = obj;
             }
-        })
+        });
         
         return cloned;
-    }
+    };
 }
 
 if(!Object.prototype.copyFrom){
@@ -296,7 +296,7 @@ if(!Object.prototype.copyFrom){
         }
         
         return tmp;
-    }
+    };
 }
 
 var StartScreen = enchant.Class.create(enchant.Group, {
