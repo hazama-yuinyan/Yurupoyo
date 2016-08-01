@@ -39,7 +39,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * enchant.js v0.4.3
+ * enchant.js v0.8.3
  *
  * Copyright (c) Ubiquitous Entertainment Inc.
  * Dual licensed under the MIT or GPL Version 3 licenses
@@ -295,18 +295,6 @@ if(!Array.prototype.deepCopy){
     };
 }
 
-if(!Object.prototype.copyFrom){
-    Object.prototype.copyFrom = function(){
-        var tmp = {};
-        for(var property in this){
-            if(this.hasOwnProperty(property))
-            	tmp[property] = this[property];
-        }
-        
-        return tmp;
-    };
-}
-
 var StartScreen = enchant.Class.create(enchant.Group, {
 	initialize : function(input_manager, task_manager, xml_manager, field){
 		enchant.Group.call(this);
@@ -375,7 +363,7 @@ var StartScreen = enchant.Class.create(enchant.Group, {
         this.addChild(this.mode_labels[2]);
 
 		function isInArea(x, y, obj){
-			return(obj.x <= x && x <= obj.x + obj.width && obj.y <= y && y <= obj.y + obj._element.clientHeight);
+			return(obj.x <= x && x <= obj.x + obj.width && obj.y <= y && y <= obj.y + obj._boundHeight);
 		}
         
         input_manager.setOperator(new StartOperator(this.mode_labels, this));
@@ -708,12 +696,12 @@ var Piece = enchant.Class.create(enchant.Sprite, {
 	},
     
     clone : function(){
-        var tmp = new Piece(this.width, this.height, this.type);
+        var tmp = new Piece(this.width, this.height, this.type, ImagePaths[this.type]);
         tmp.image = this.image;
         tmp.frame = this.frame;
-        tmp.position = this.position.copyFrom();
-        tmp.real_coords = this.real_coords.copyFrom();
-        tmp.position_in_shape = this.position_in_shape.copyFrom();
+        tmp.position = cloneObject(this.position);
+        tmp.real_coords = cloneObject(this.real_coords);
+        tmp.position_in_shape = cloneObject(this.position_in_shape);
         tmp.neighbors = this.neighbors.slice(0);
         tmp.neighbors_buffer = this.neighbors_buffer;
         tmp.connecting_to = this.connecting_to;
@@ -1123,8 +1111,8 @@ var XmlManager = enchant.Class.create(Manager, {
         Manager.call(this, stage);
         
 		var http_obj = new XMLHttpRequest(), http_obj2 = new XMLHttpRequest();
-		var definitions = [], headers = [], max_nums = {}, texts = null, expr_evaluator = new ExpressoMin();
 		var variable_store = new VarStore();
+		var definitions = [], headers = [], max_nums = {}, texts = null, expr_evaluator = new ExpressoMin(variable_store);
 		var now = new Date();
 		variable_store.addVar("now", {year : now.getFullYear(), month : now.getMonth() + 1, date : now.getDate(), day : now.getDay(),
 			hour : now.getHours()}, true);
@@ -1500,7 +1488,7 @@ var TagManager = enchant.Class.create(Manager, {
             if(tag_obj.num != -1 && tag_obj.type != getPropertyName(PieceTypes, pieces[0].type))
             	return;
             
-            var label = null, tmp_tag = tag_obj.copyFrom(), types = tmp_tag.effect.toLowerCase().split(/\s*\+\s*/);
+            var label = null, tmp_tag = cloneObject(tag_obj), types = tmp_tag.effect.toLowerCase().split(/\s*\+\s*/);
             types.forEach(function(type){
                 var interpreter_type = type;
                 this.child_interpreters["effect"].setPieces(pieces);
@@ -2823,10 +2811,11 @@ var Stage = enchant.Class.create(enchant.Group, {
 		var styles = [];
 		while(str){
 			var result;
-			if(result = str.match(/^[ \t]+/))
+			if(result = str.match(/^[ \t]+/)){
 				//
-			else if((result = str.match(/^([\w\-]+)\s*:\s*([^;]+);*/)) && result[1] != "position")
+			}else if((result = str.match(/^([\w\-]+)\s*:\s*([^;]+);*/)) && result[1] != "position"){
 				styles.push({name : result[1], content : result[2]});
+			}
 
 			str = str.slice(result[0].length);
 		}
@@ -2835,40 +2824,47 @@ var Stage = enchant.Class.create(enchant.Group, {
 	}
 });
 
+var game = null;
+
 window.onload = function(){
-	game = new enchant.nineleap.memory.Game(880, 760);
-	game.fps = 30;
-	game.preload(ImagePaths);
-	game._debug = true;//false;
-    enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
-    //game.memory.player.preload();
-    //game.memories.ranking.preload();
-    enchant.Sound.enabledInMobileSafari = true;
-    
-	game.onload = function(){
-		var stage = new Stage();
-		game.currentScene.addChild(stage);
-        var start_screen = new StartScreen(stage.getManager("input"), stage.getManager("task"), stage.getManager("xml"), stage.getPanel().field);
-        game.currentScene.addChild(start_screen);
-        game.shows_conversation = true;                              //ピースが消えるときにエフェクトをかけるかどうか
-	};
+	try{
+		game = new enchant.Game(880, 760);
+		game.fps = 30;
+		game.preload(ImagePaths);
+		game._debug = true;//false;
+	    //enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
+	    //core.memory.player.preload();
+	    //core.memories.ranking.preload();
+	    enchant.Sound.enabledInMobileSafari = true;
+	    
+		game.onload = function(){
+			var stage = new Stage();
+			game.currentScene.addChild(stage);
+	        var start_screen = new StartScreen(stage.getManager("input"), stage.getManager("task"), stage.getManager("xml"), stage.getPanel().field);
+	        game.currentScene.addChild(start_screen);
+	        game.shows_conversation = true;                              //ピースが消えるときにエフェクトをかけるかどうか
+		};
 
-	game.keybind(32, 'a');
-	game.keybind(80, 'b');
-	game.keybind(77, 'c');
+		game.keybind(32, 'a');
+		game.keybind(80, 'b');
+		game.keybind(77, 'c');
 
-	['c'].forEach(function(type){
-		this.addEventListener(type + 'buttondown', function(e) {
-			if (!this.input[type]) {
-				this.input[type] = true;
-			}
-		});
-		this.addEventListener(type + 'buttonup', function(e) {
-			if (this.input[type]) {
-				this.input[type] = false;
-			}
-		});
-	}, game);
+		['c'].forEach(function(type){
+			this.addEventListener(type + 'buttondown', function(e) {
+				if (!this.input[type]) {
+					this.input[type] = true;
+				}
+			});
+			this.addEventListener(type + 'buttonup', function(e) {
+				if (this.input[type]) {
+					this.input[type] = false;
+				}
+			});
+		}, game);
 
-	game.start();
+		game.start();
+	}
+	catch(e){
+		console.log(e.message);
+	}
 };

@@ -1,199 +1,180 @@
 /**
+ * @fileOverview
  * nineleap.enchant.js
- * @version 0.3 (2012/02/01)
- * @requires enchant.js v0.4.0 or later
+ * @version 0.3.4 (2013/04/03)
+ * @requires enchant.js v0.6.3 or later
  *
  * @description
  * enchant.js extension for 9leap.net
  * 9leap.net 向けの enchant.js 拡張プラグイン。
- * game.end の引数にスコアと結果の文字列を渡すことで、ランキングに登録できる。
+ * core.end の引数にスコアと結果の文字列を渡すことで、ランキングに登録できる。
  * (9leapにアップロードした後のみランキング画面にジャンプする)
  *
  * @usage
-
- var game = new Game(320, 320);
-
- game.onload = function(){
-     // executed after player pushed "START"
-     // ...
-     if(some.condition)game.end(score, result);
- };
-
- game.start();
-
+ * 
+ * var core = new Core(320, 320);
+ * 
+ * core.onload = function(){
+ * // executed after player pushed "START"
+ * // ...
+ * if(some.condition)core.end(score, result);
+ * };
+ * 
+ * core.start();
  */
 
-(function () {
+(function() {
 
-enchant.nineleap = { assets: ['start.png', 'end.png'] };
-
-/**
- * @scope enchant.nineleap.Game.prototype
- */
-enchant.nineleap.Game = enchant.Class.create(enchant.Game, {
     /**
-     *
-     * @param width
-     * @param height
+     * @type {Object}
      */
-    initialize: function(width, height) {
-        enchant.Game.call(this, width, height);
-        this.addEventListener('load', function() {
-            var game = this;
-            this.startScene = new SplashScene();
-            this.startScene._element.style.zIndex = 10;
-            this.startScene.image = this.assets['start.png'];
-            this.startScene.addEventListener('touchend', function() {
-                if (game.started == false) {
-                    if (game.onstart != null) game.onstart();
-                    game.started = true;
-                    gameStart = true;   // deprecated
-                }
-                if (game.currentScene == this) game.popScene();
-                this.removeEventListener('touchend', arguments.callee);
+    enchant.nineleap = { assets: ['start.png', 'end.png'] };
+
+    /**
+     * @scope enchant.nineleap.Core.prototype
+     */
+    enchant.nineleap.Core = enchant.Class.create(enchant.Core, {
+        /**
+         * start, gameover の画像を表示し、
+         * 最後にスコアを送信するように拡張された Core クラス
+         * @param width
+         * @param height
+         * @constructs
+         */
+        initialize: function(width, height) {
+            enchant.Core.call(this, width, height);
+            this.addEventListener('load', function() {
+                var core = this;
+                this.startScene = new enchant.nineleap.SplashScene();
+                this.startScene.image = this.assets['start.png'];
+                this.startScene.addEventListener('touchend', function() {
+                    if (core.started === false) {
+                        if (core.onstart != null) {
+                            core.onstart();
+                        }
+                        core.started = true;
+                        coreStart = true;   // deprecated
+                    }
+                    if (core.currentScene === this) {
+                        core.popScene();
+                    }
+                    this.removeEventListener('touchend', arguments.callee);
+                });
+                this.addEventListener('keydown', function() {
+                    if (this.started === false) {
+                        if (this.onstart != null) {
+                            this.onstart();
+                        }
+                        this.started = true;
+                    }
+                    if (core.currentScene === core.startScene) {
+                        core.popScene();
+                    }
+                    this.removeEventListener('keydown', arguments.callee);
+                });
+                this.pushScene(this.startScene);
+
+                this.endScene = new enchant.nineleap.SplashScene();
+                this.endScene.image = this.assets['end.png'];
+                this.removeEventListener('load', arguments.callee);
             });
-            this.addEventListener('keydown', function() {
-                if (this.started == false) {
-                    if(this.onstart != null) this.onstart();
-                    this.started = true;
-                    gameStart = true;   // deprecated
-                }
-                if (game.currentScene == game.startScene) game.popScene();
-                this.removeEventListener('keydown', arguments.callee);
-            });
-            this.pushScene(this.startScene);
-
-            this.endScene = new SplashScene();
-            this.endScene.image = this.assets['end.png'];
-        });
-        this.scoreQueue = false;
-        this.started = false;
-        gameStart = false; // deprecated
-    },
-
-    loadImage: function(src, callback) {
-        if (callback == null) callback = function() {};
-        this.assets[src] = enchant.Surface.load(src);
-        this.assets[src].addEventListener('load', callback);
-    },
-
-    start: function() {
-        var game = this;
-
-        if (this._intervalID) {
-            window.clearInterval(this._intervalID);
-        } else if (this._assets.length) {
-            var o = {};
-            var assets = this._assets.filter(function(asset) {
-                return asset in o ? false : o[asset] = true;
-            });
-            var tAssets = (this._twitterAssets != undefined)? this._twitterAssets : [];
-            var nAssets = (this._netpriceData != undefined)? this._netpriceData : [];
-            var mAssets = (this._memoryAssets != undefined) ? this._memoryAssets : [];
-            var loaded = 0;
-            var total = assets.length + tAssets.length + nAssets.length + mAssets.length;
-            for (var i = 0, len = assets.length; i < len; i++) {
-                this.load(assets[i], function() {
-                    var e = new enchant.Event('progress');
-                    e.loaded = ++loaded;
-                    e.total = total;
-                    game.dispatchEvent(e);
-                    if (loaded == total) {
-                        game.removeScene(game.loadingScene);
-                        game.dispatchEvent(new enchant.Event('load'));
-                    }
-                });
-            }
-            for (var i = 0, len = tAssets.length; i < len; i++) {
-                this.loadImage(tAssets[i], function() {
-                    var e = new enchant.Event('progress');
-                    e.loaded = ++loaded;
-                    e.total = total;
-                    game.dispatchEvent(e);
-                    if (loaded == total) {
-                        game.removeScene(game.loadingScene);
-                        game.dispatchEvent(new enchant.Event('load'));
-                    }
-                });
-            }
-            for (var i = 0, len = mAssets.length; i < len; i++) {
-                this.loadImage(mAssets[i], function() {
-                    var e = new enchant.Event('progress');
-                    e.loaded = ++loaded;
-                    e.total = total;
-                    game.dispatchEvent(e);
-                    if (loaded == total) {
-                        game.removeScene(game.loadingScene);
-                        game.dispatchEvent(new enchant.Event('load'));
-                    }
-                });
-            }
-
-            for (var i = 0, len = nAssets.length; i < len; i++) {
-                this.loadImage(nAssets[i], function() {
-                    var e = new enchant.Event('progress');
-                    e.loaded = ++loaded;
-                    e.total = total;
-                    game.dispatchEvent(e);
-                    if (loaded == total) {
-                        game.removeScene(game.loadingScene);
-                        game.dispatchEvent(new enchant.Event('load'));
-                    }
-                });
-            }
-            this.pushScene(this.loadingScene);
-        } else {
-            this.dispatchEvent(new enchant.Event('load'));
-        }
-        this.currentTime = Date.now();
-        this._intervalID = window.setInterval(function() {
-            game._tick()
-        }, 1000 / this.fps);
-        this.running = true;
-    },
-
-    end: function(score, result, img) {
-        if(img !== undefined){
-            this.endScene.image = img;
-        }
-        this.pushScene(this.endScene);
-        if (location.hostname == 'r.jsgames.jp') {
-            var submit = function() {
-                var id = location.pathname.match(/^\/games\/(\d+)/)[1]; 
-                location.replace([
-                    'http://9leap.net/games/', id, '/result',
-                    '?score=', encodeURIComponent(score),
-                    '&result=', encodeURIComponent(result)
-                ].join(''));
-            }
-            this.endScene.addEventListener('touchend', submit);
-            window.setTimeout(submit, 3000);
-        }
-        enchant.Game.instance.end = function(){ };
-    }
-});
-
-/**
- * @scope enchant.nineleap.SplashScene.prototype
- */
-enchant.nineleap.SplashScene = enchant.Class.create(enchant.Scene, {
-    image: {
-        get: function() {
-            return this._image;
+            this.scoreQueue = false;
+            this.started = false;
+            coreStart = false; // deprecated
         },
-        set: function(image) {
-            this._image = image;
 
-            while (this.firstChild) {
-                this.removeChild(this.firstChild);
+        _requestPreload: function() {
+            var o = {};
+            var loaded = 0,
+                len = 0,
+                loadFunc = function() {
+                    var e = new enchant.Event('progress');
+                    e.loaded = ++loaded;
+                    e.total = len;
+                    enchant.Core.instance.loadingScene.dispatchEvent(e);
+                };
+            this._assets
+                .concat(this._twitterAssets || [])
+                .concat(this._netpriceData || [])
+                .concat(this._memoryAssets || [])
+                .reverse()
+                .forEach(function(asset) {
+                    var src, name;
+                    if (asset instanceof Array) {
+                        src = asset[0];
+                        name = asset[1];
+                    } else {
+                        src = name = asset;
+                    }
+                    if (!o[name]) {
+                        o[name] = this.load(src, name, loadFunc);
+                        len++;
+                    }
+                }, this);
+
+            this.pushScene(this.loadingScene);
+            return enchant.Deferred.parallel(o);
+        },
+
+        end: function(score, result, img) {
+            if (img !== undefined) {
+                this.endScene.image = img;
             }
-            var sprite = new Sprite(image.width, image.height);
-            sprite.image = image;
-            sprite.x = (this.width - image.width) / 2;
-            sprite.y = (this.height - image.height) / 2;
-            this.addChild(sprite);
+            this.pushScene(this.endScene);
+            if (location.hostname === 'r.jsgames.jp') {
+                var submit = function() {
+                    var id = location.pathname.match(/^\/games\/(\d+)/)[1];
+                    location.replace([
+                        'http://9leap.net/games/', id, '/result',
+                        '?score=', encodeURIComponent(score),
+                        '&result=', encodeURIComponent(result)
+                    ].join(''));
+                };
+                this.endScene.addEventListener('touchend', submit);
+                window.setTimeout(submit, 3000);
+            }
+            enchant.Core.instance.end = function() {
+            };
         }
-    }
-});
+    });
+
+    /**
+     * @scope enchant.nineleap.SplashScene.prototype
+     */
+    enchant.nineleap.SplashScene = enchant.Class.create(enchant.Scene, {
+        /**
+         * @extends enchant.Scene
+         * @constructs
+         * スプラッシュ画像を表示するシーン。
+         */
+        initialize: function() {
+            enchant.Scene.call(this);
+        },
+
+        /**
+         * 中央に表示する画像
+         * @type {enchant.Surface}
+         */
+        image: {
+            get: function() {
+                return this._image;
+            },
+            set: function(image) {
+                this._image = image;
+
+                // discard all child nodes
+                while (this.firstChild) {
+                    this.removeChild(this.firstChild);
+                }
+
+                // generate an Sprite object and put it on center
+                var sprite = new enchant.Sprite(image.width, image.height);
+                sprite.image = image;
+                sprite.x = (this.width - image.width) / 2;
+                sprite.y = (this.height - image.height) / 2;
+                this.addChild(sprite);
+            }
+        }
+    });
 
 })();

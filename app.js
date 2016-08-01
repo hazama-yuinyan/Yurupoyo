@@ -1,5 +1,18 @@
 var http = require("http"), url = require("url"), path = require("path"), fs = require("fs");
 
+var media_lengths = {
+	"bang1.ogg" : 1.532,
+	"bang2.ogg" : 1.486,
+	"bang3.ogg" : 1.497,
+	"bang4.ogg" : 1.509,
+	"bang5.ogg" : 1.486,
+	"bang6.ogg" : 1.486,
+	"bang7.ogg" : 1.497,
+	"bang8.ogg" : 1.509,
+	"shining.ogg" : 1.346,
+	"very_shining.ogg" : 1.602
+};
+
 http.createServer(function(req, res){
 	if(req.method != "GET")
 		return;
@@ -79,6 +92,10 @@ http.createServer(function(req, res){
 			res.end();
 		}else{
 			res.writeHead(200, {"Content-Type" : content_type});
+			/*if(match[1] === "ogg"){
+				res.writeHead(200, {"Content-Type" : content_type, })
+				media_lengths[uri];
+			}*/
 			res.write(data);
 			res.end();
 		}
