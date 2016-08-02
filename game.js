@@ -295,9 +295,9 @@ if(!Array.prototype.deepCopy){
     };
 }
 
-var StartScreen = enchant.Class.create(enchant.Group, {
-	initialize : function(input_manager, task_manager, xml_manager, field){
-		enchant.Group.call(this);
+var StartScreen = enchant.Class.create(enchant.DOMScene, {
+	initialize : function(input_manager, task_manager, xml_manager, field, stage){
+		enchant.DOMScene.call(this);
 
         var back = new enchant.Sprite(game.width, game.height);
 		back.backgroundColor = "rgba(100, 100, 100, 0.6)";
@@ -366,7 +366,13 @@ var StartScreen = enchant.Class.create(enchant.Group, {
 			return(obj.x <= x && x <= obj.x + obj.width && obj.y <= y && y <= obj.y + obj._boundHeight);
 		}
         
-        input_manager.setOperator(new StartOperator(this.mode_labels, this));
+        var input_manager2 = new InputManager(stage);
+        input_manager2.setOperator(new StartOperator(this.mode_labels, this));
+        //input_manager.setOperator(new StartOperator(this.mode_labels, this));
+
+        this.addEventListener('enterframe', function(){
+        	input_manager2.update();
+        });
 
 		var touched = false, prev_touched_frame = 0;
 		this.addEventListener('touchstart', function(e){
@@ -2578,10 +2584,10 @@ var StartOperator = enchant.Class.create(InputOperator, {
         }
         
         game.mode = mode_name;
-    	game.currentScene.removeChild(this.screen);
+    	game.currentScene.removeEventListener('enterframe');
+    	game.popScene();
         
         this.task_manager.add(new CreateShapeTask(this.task_manager, panel, new PieceFactory()));
-        this.input_manager.setOperator(new NormalOperator(panel));
         this.input_manager.stage.is_in_game = true;
     }
 });
@@ -2715,7 +2721,7 @@ var Stage = enchant.Class.create(enchant.Group, {
 		this.addChild(panel.home_button);
 		this.addChild(panel.manual_button);
 		this.addChild(panel.field);
-        
+
         this.loadResources = function(path_header, paths){
     		var audio = new Audio();
 			for(var name in path_header){		//各種リソースファイルを読み込む
@@ -2746,7 +2752,9 @@ var Stage = enchant.Class.create(enchant.Group, {
         this.getPanel = function(){
             return panel;
         }
-        
+
+		managers.input.setOperator(new NormalOperator(panel));
+
         this.addEventListener('enterframe', function(){
             array.forEach(function(manager){
                 manager.update();
@@ -2828,20 +2836,24 @@ var game = null;
 
 window.onload = function(){
 	try{
-		game = new enchant.Game(880, 760);
+		var core = new enchant.Game(880, 760);
+		game = core;
 		game.fps = 30;
 		game.preload(ImagePaths);
 		game._debug = true;//false;
 	    //enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
-	    //core.memory.player.preload();
-	    //core.memories.ranking.preload();
+	    //game.memory.player.preload();
+	    //game.memories.ranking.preload();
 	    enchant.Sound.enabledInMobileSafari = true;
+
+	    var scene = new enchant.DOMScene();
+	    game.replaceScene(scene);
 	    
 		game.onload = function(){
 			var stage = new Stage();
 			game.currentScene.addChild(stage);
-	        var start_screen = new StartScreen(stage.getManager("input"), stage.getManager("task"), stage.getManager("xml"), stage.getPanel().field);
-	        game.currentScene.addChild(start_screen);
+	        var start_screen = new StartScreen(stage.getManager("input"), stage.getManager("task"), stage.getManager("xml"), stage.getPanel().field, stage);
+	        game.pushScene(start_screen);//game.currentScene.addChild(start_screen);
 	        game.shows_conversation = true;                              //ピースが消えるときにエフェクトをかけるかどうか
 		};
 
