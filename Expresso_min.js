@@ -167,14 +167,14 @@ var ExpressoMin = enchant.Class.create({
 				return "successful assignment";
 			},
 			logical_or: function(m){
-				return m[1].inject(m[0], function(acc, v){
+				return m[1].reduce(function(acc, v){
 					return acc || v[1];
-				});
+				}, m[0]);
 			},
 			logical_and: function(m){
-				return m[1].inject(m[0], function(acc, v){
+				return m[1].reduce(function(acc, v){
 					return acc && v[1];
-				});
+				}, m[0]);
 			},
 			comp: function(m){
 				return (m[1] != null) ? (function(acc, v){
@@ -186,20 +186,20 @@ var ExpressoMin = enchant.Class.create({
 				})(m[0], m[1]) : m[0];
 			},
 			add: function(m) {
-				return m[1].inject(m[0], function(acc, v){
+				return m[1].reduce(function(acc, v){
 					return (v[0] == "-") ? (acc - v[1]) : (acc + v[1]);
-				});
+				}, m[0]);
 			},
 			mul: function(m) {
-				return m[1].inject(m[0], function(acc, v){
+				return m[1].reduce(function(acc, v){
 					return (v[0] == "%") ? (acc % v[1]) :
                     (v[0] == "/") ? (acc / v[1]) : (acc * v[1]);
-				});
+				}, m[0]);
 			},
 			pow: function(m) {
-				return m[1].inject(m[0], function(acc, v){
+				return m[1].reduce(function(acc, v){
 					return Math.pow(acc, v[1]);
-				});
+				}, m[0]);
 			},
             call: function(m){
                 var funcs = _self.defined_functions;
@@ -229,7 +229,9 @@ var ExpressoMin = enchant.Class.create({
 
 		this.evaluate = function(str){
 			var tokens = this.tokenize(str);
-			if(tokens == null){return null;}
+			if(tokens == null)
+				return null;
+
 			return parser.parse(tokens, "start");
 		};
         
