@@ -511,7 +511,7 @@ var PauseScreen = enchant.Class.create(enchant.Group, {
 			ranking_list.appendChild(document.createElement("br"));
 		}
 
-		ranking_label._element.appendChild(ranking_list);
+		ranking_label.text = ranking_list.outerHTML;
         this.addChild(ranking_label);
 
 		this.addChild(explain_label);
@@ -2836,14 +2836,14 @@ var game = null;
 
 window.onload = function(){
 	try{
-		var core = new enchant.Game(880, 760);
+		var core = new Core(880, 760);
 		game = core;
 		game.fps = 30;
 		game.preload(ImagePaths);
 		game._debug = true;//false;
-	    //enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
-	    //game.memory.player.preload();
-	    //game.memories.ranking.preload();
+	    enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
+	    game.memory.player.preload();
+	    game.memories.ranking.preload();
 	    enchant.Sound.enabledInMobileSafari = true;
 
 	    var scene = new enchant.DOMScene();
