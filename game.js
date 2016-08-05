@@ -449,9 +449,9 @@ var GameOver = enchant.Class.create({
 	}
 });
 
-var PauseScreen = enchant.Class.create(enchant.Group, {
-	initialize : function(xml_manager, y, field_height){
-		enchant.Group.call(this);
+var PauseScreen = enchant.Class.create(enchant.DOMScene, {
+	initialize : function(xml_manager, y, field_height, stage){
+		enchant.DOMScene.call(this);
 
         var back = new enchant.Sprite(game.width, game.height);
         back.backgroundColor = "rgba(100, 100, 100, 0.6)";
@@ -516,6 +516,13 @@ var PauseScreen = enchant.Class.create(enchant.Group, {
 
 		this.addChild(explain_label);
 		this.addChild(pause_label);
+
+		var input_manager = new InputManager(stage);
+		input_manager.setOperator(new PauseOperator());
+
+		this.addEventListener('enterframe', function(){
+			input_manager.update();
+		});
 
 		var touched = false;
 		this.addEventListener('touchstart', function(){
@@ -2495,6 +2502,7 @@ var NormalOperator = enchant.Class.create(InputOperator, {
     initialize : function(panel){
         InputOperator.call(this);
         
+        this.input_manager = null;
         this.task_manager = null;
         this.panel = panel;
     },
@@ -2526,7 +2534,9 @@ var NormalOperator = enchant.Class.create(InputOperator, {
     },
     
     operateB : function(){      //Bボタンを押されたらポーズする
-        this.input_manager.setOperator(new PauseOperator(this.panel));
+    	var pause_screen = new PauseScreen(this.input_manager.stage.getManager("xml"), this.panel.field.y, this.panel.field.height, this.input_manager.stage);
+        game.pushScene(pause_screen);
+        //this.input_manager.setOperator(new PauseOperator(this.panel));
     },
     
     operateC : function(){      //Cボタンを押されたらエフェクトのオン・オフを切り替える
@@ -2593,23 +2603,25 @@ var StartOperator = enchant.Class.create(InputOperator, {
 });
 
 var PauseOperator = enchant.Class.create(InputOperator, {
-    initialize : function(panel){
+    initialize : function(/*panel*/){
         InputOperator.call(this);
         
         this.pause_screen = null;
-        this.panel = panel;
+        //this.panel = panel;
     },
     
     setInputManager : function(input_manager){
         this.input_manager = input_manager;
-        this.pause_screen = new PauseScreen(input_manager.stage.getManager("xml"), this.panel.field.y, this.panel.field.height);
-        game.currentScene.addChild(this.pause_screen);
+        //this.pause_screen = new PauseScreen(input_manager.stage.getManager("xml"), this.panel.field.y, this.panel.field.height);
+        //game.currentScene.addChild(this.pause_screen);
         input_manager.stage.is_in_game = false;
     },
     
     operateB : function(){      //Bボタンを押されたらポーズ画面を抜ける
-        game.currentScene.removeChild(this.pause_screen);
-        this.input_manager.setOperator(new NormalOperator(this.panel));
+        //game.currentScene.removeChild(this.pause_screen);
+        game.currentScene.removeEventListener('enterframe');
+        game.popScene();
+        //this.input_manager.setOperator(new NormalOperator(this.panel));
         this.input_manager.stage.is_in_game = true;
     }
 });
