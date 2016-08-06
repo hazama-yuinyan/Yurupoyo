@@ -686,7 +686,7 @@ var NextPieceLabel = enchant.Class.create(enchant.Group, {
 		this.next_pieces.forEach(function(piece, index){
 			if(piece != null){
 				piece.x = this.piece_up_left_pos.x + (index % 4) * size_of_block.width;
-				piece.y = this.piece_up_left_pos.y + Math.floor(index / 4) * size_of_block.height;
+				piece.y = this.y + this.piece_up_left_pos.y + Math.floor(index / 4) * size_of_block.height;
 				this.addChild(piece);
 			}
 		}, this);
@@ -701,7 +701,7 @@ var Piece = enchant.Class.create(enchant.Sprite, {
 		this.image = image_path && game.assets[image_path];
 		this.frame = 0;
 		this.position = {x : 0, y : 0};		//自分のいる位置をブロック単位で表したもの
-		this.real_coords = {x : 0.0, y : 0.0};	//このピースの座標を少数で表したもの
+		this.real_coords = {x : 0.0, y : 0.0};	//このピースの座標を小数で表したもの
 		this.position_in_shape = {x : 0, y : 0};	//現在のシェイプ内での相対的な位置をブロック単位で表したもの:左上が(0,0)右下が(4,2)
 		this.neighbors = [null, null, null, null];	//自分の周りにいるピースへの参照:[Left, Right, Up, Down]の順番
 		this.neighbors_buffer = null;				//消せるピースを探すときに使用するneighborsの一時保存領域
@@ -1338,14 +1338,30 @@ var TagManager = enchant.Class.create(Manager, {
                     if(style.name == "width" || style.name == "height" || style.name == "left" || style.name == "top")
                     	return;
 
-        			obj._style[style.name] = style.content;
+                    switch(style.name){
+                    case "background-color":
+                    	obj.backgroundColor = style.content;
+                    	break;
+
+                    case "color":
+                    	obj.color = style.content;
+                    	break;
+
+                    case "font":
+                    	obj.font = style.content;
+                    	break;
+
+                    default:
+                    	obj._style[style.name] = style.content;
+                    }
         		}, this);
             },
             
-            createNewLabel : function(style, x, y, width, text){
+            createNewLabel : function(style, x, y, width, height, text){
                 var tmp = new enchant.Label(text);
                 tmp.moveTo(x, y);
                 tmp.width = width;
+                tmp.height = height;
                 this.setStyle(tmp, style);
                 return tmp;
             },
@@ -1367,7 +1383,7 @@ var TagManager = enchant.Class.create(Manager, {
 				position.y = this.manager.interpretY(tag_obj.y || tmpl.y, size.height * num_lines.val);
 
 				var label = this.createNewLabel(style, position.x, position.y, 
-                    (this.manager.info.width && size.width >= this.manager.info.width) ? this.manager.info.width : size.width, text);
+                    (this.manager.info.width && size.width >= this.manager.info.width) ? this.manager.info.width : size.width, size.height * num_lines.val, text);
 				this.label_manager.add(label, tag_obj.id, game.frame + tag_obj.start_time, game.frame + tag_obj.end_time);
                 this.manager.setMaxEndTime(tag_obj.end_time || 0);
                 return label;
@@ -2847,48 +2863,43 @@ var Stage = enchant.Class.create(enchant.Group, {
 var game = null;
 
 window.onload = function(){
-	try{
-		var core = new Core(880, 760);
-		game = core;
-		game.fps = 30;
-		game.preload(ImagePaths);
-		game._debug = true;//false;
-	    enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
-	    game.memory.player.preload();
-	    game.memories.ranking.preload();
-	    enchant.Sound.enabledInMobileSafari = true;
+	var core = new enchant.nineleap.memory.Core(880, 760);
+	game = core;
+	game.fps = 30;
+	game.preload(ImagePaths);
+	game._debug = true;//false;
+    enchant.nineleap.memory.LocalStorage.DEBUG_MODE = true;
+    game.memory.player.preload();
+    game.memories.ranking.preload();
+    enchant.Sound.enabledInMobileSafari = true;
 
-	    var scene = new enchant.DOMScene();
-	    game.replaceScene(scene);
-	    
-		game.onload = function(){
-			var stage = new Stage();
-			game.currentScene.addChild(stage);
-	        var start_screen = new StartScreen(stage.getManager("input"), stage.getManager("task"), stage.getManager("xml"), stage.getPanel().field, stage);
-	        game.pushScene(start_screen);//game.currentScene.addChild(start_screen);
-	        game.shows_conversation = true;                              //ピースが消えるときにエフェクトをかけるかどうか
-		};
+    var scene = new enchant.DOMScene();
+    game.replaceScene(scene);
+    
+	game.onload = function(){
+		var stage = new Stage();
+		game.currentScene.addChild(stage);
+        var start_screen = new StartScreen(stage.getManager("input"), stage.getManager("task"), stage.getManager("xml"), stage.getPanel().field, stage);
+        game.pushScene(start_screen);//game.currentScene.addChild(start_screen);
+        game.shows_conversation = true;                              //ピースが消えるときにエフェクトをかけるかどうか
+	};
 
-		game.keybind(32, 'a');
-		game.keybind(80, 'b');
-		game.keybind(77, 'c');
+	game.keybind(32, 'a');
+	game.keybind(80, 'b');
+	game.keybind(77, 'c');
 
-		['c'].forEach(function(type){
-			this.addEventListener(type + 'buttondown', function(e) {
-				if (!this.input[type]) {
-					this.input[type] = true;
-				}
-			});
-			this.addEventListener(type + 'buttonup', function(e) {
-				if (this.input[type]) {
-					this.input[type] = false;
-				}
-			});
-		}, game);
+	['c'].forEach(function(type){
+		this.addEventListener(type + 'buttondown', function(e) {
+			if (!this.input[type]) {
+				this.input[type] = true;
+			}
+		});
+		this.addEventListener(type + 'buttonup', function(e) {
+			if (this.input[type]) {
+				this.input[type] = false;
+			}
+		});
+	}, game);
 
-		game.start();
-	}
-	catch(e){
-		console.log(e.message);
-	}
+	game.start();
 };
